@@ -6,7 +6,3 @@ dist/
 
 # Lockfile
 package-lock.json
-
-# Environment Variables
-.env
-.env.*
