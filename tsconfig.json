@@ -4,6 +4,8 @@
         "module": "nodenext",
         "moduleResolution": "nodenext",
         "paths": {
+            "@modules/*": ["./src/modules/*"],
+            "@prisma-generated/*": ["./src/generated/prisma/*"],
             "@test/*": ["./test/*"]
         },
         "resolvePackageJsonExports": true,
