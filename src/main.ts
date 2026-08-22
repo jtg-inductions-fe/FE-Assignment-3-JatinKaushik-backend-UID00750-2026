@@ -1,7 +1,6 @@
-import { NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
-import { TransformInterceptor } from '@common/interceptors/transform.interceptor';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -14,14 +13,6 @@ async function bootstrap() {
             transform: true,
         }),
     );
-
-    // Filter and format outgoing data (Response DTOs)
-    app.useGlobalInterceptors(
-        new ClassSerializerInterceptor(app.get(Reflector)),
-    );
-
-    // Wrap successful responses in a standard { success: true, data } JSON envelope
-    app.useGlobalInterceptors(new TransformInterceptor());
 
     await app.listen(process.env.PORT ?? 3000);
 }
