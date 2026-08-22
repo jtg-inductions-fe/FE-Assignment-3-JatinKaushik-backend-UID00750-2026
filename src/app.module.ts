@@ -7,17 +7,25 @@ import { UsersModule } from '@modules/users/users.module';
 import { RestaurantsModule } from '@modules/restaurants/restaurants.module';
 import { MenuModule } from '@modules/menu/menu.module';
 import { OrdersModule } from '@modules/orders/orders.module';
-import { PrismaService } from './prisma/prisma.service';
 import { APP_FILTER, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter';
 import { TransformInterceptor } from '@common/interceptors/transform.interceptor';
+import { envValidationSchema } from '@common/config/env.validation';
+import { PrismaModule } from './prisma/prisma.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
+            validationSchema: envValidationSchema,
+            validationOptions: {
+                allowUnknown: true,
+                abortEarly: false,
+            },
         }),
-        PrismaService,
+        PrismaModule,
+        HealthModule,
         AuthModule,
         UsersModule,
         RestaurantsModule,
