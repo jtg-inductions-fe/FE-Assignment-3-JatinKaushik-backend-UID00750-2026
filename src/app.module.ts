@@ -8,6 +8,8 @@ import { RestaurantsModule } from '@modules/restaurants/restaurants.module';
 import { MenuModule } from '@modules/menu/menu.module';
 import { OrdersModule } from '@modules/orders/orders.module';
 import { PrismaService } from './prisma/prisma.service';
+import { APP_FILTER } from '@nestjs/core';
+import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter';
 
 @Module({
     imports: [
@@ -22,6 +24,12 @@ import { PrismaService } from './prisma/prisma.service';
         OrdersModule,
     ],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [
+        AppService,
+        {
+            provide: APP_FILTER,
+            useClass: AllExceptionsFilter,
+        },
+    ],
 })
 export class AppModule {}

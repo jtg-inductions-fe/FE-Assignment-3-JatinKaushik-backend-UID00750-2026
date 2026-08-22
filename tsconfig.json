@@ -5,6 +5,7 @@
         "moduleResolution": "nodenext",
         "paths": {
             "@modules/*": ["./src/modules/*"],
+            "@common/*": ["./src/common/*"],
             "@prisma-generated/*": ["./src/generated/prisma/*"],
             "@test/*": ["./test/*"]
         },
