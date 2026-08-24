@@ -5,7 +5,12 @@
         "moduleResolution": "nodenext",
         "paths": {
             "@modules/*": ["./src/modules/*"],
-            "@common/*": ["./src/common/*"],
+            "@congif/*": ["./src/common/config/*"],
+            "@dto/*": ["./src/common/dto/*"],
+            "@filters/*": ["./src/common/filters/*"],
+            "@interceptors/*": ["./src/common/interceptors/*"],
+            "@interfaces/*": ["./src/common/interfaces/*"],
+            "@utils/*": ["./src/common/utils/*"],
             "@prisma-generated/*": ["./src/generated/prisma/*"],
             "@test/*": ["./test/*"]
         },

@@ -8,9 +8,9 @@ import { RestaurantsModule } from '@modules/restaurants/restaurants.module';
 import { MenuModule } from '@modules/menu/menu.module';
 import { OrdersModule } from '@modules/orders/orders.module';
 import { APP_FILTER, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
-import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter';
-import { TransformInterceptor } from '@common/interceptors/transform.interceptor';
-import { envValidationSchema } from '@common/config/env.validation';
+import { AllExceptionsFilter } from '@filters/all-exceptions.filter';
+import { TransformInterceptor } from '@interceptors/transform.interceptor';
+import { envValidationSchema } from '@congif/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 
