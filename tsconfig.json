@@ -5,7 +5,7 @@
         "moduleResolution": "nodenext",
         "paths": {
             "@modules/*": ["./src/modules/*"],
-            "@congif/*": ["./src/common/config/*"],
+            "@config/*": ["./src/common/config/*"],
             "@dto/*": ["./src/common/dto/*"],
             "@filters/*": ["./src/common/filters/*"],
             "@interceptors/*": ["./src/common/interceptors/*"],
@@ -29,8 +29,8 @@
         "skipLibCheck": true,
         "strictNullChecks": true,
         "forceConsistentCasingInFileNames": true,
-        "noImplicitAny": false,
-        "strictBindCallApply": false,
+        "noImplicitAny": true,
+        "strictBindCallApply": true,
         "noFallthroughCasesInSwitch": false
     }
 }
