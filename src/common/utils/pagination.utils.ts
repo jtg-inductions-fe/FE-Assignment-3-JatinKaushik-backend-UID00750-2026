@@ -1,24 +1,31 @@
 import { PaginatedResult } from '@interfaces/paginated-result.interface';
 import { PaginationQueryDto } from '@dto/pagination-query.dto';
 
-interface PrismaListDelegate<T> {
+interface PrismaModelDelegate<T, WhereInput, OrderByInput> {
     findMany(options: {
-        where?: object;
-        orderBy?: object;
+        where?: WhereInput;
+        orderBy?: OrderByInput;
         skip?: number;
         take?: number;
     }): Promise<T[]>;
-    count(options: { where?: object }): Promise<number>;
+    count(options: { where?: WhereInput }): Promise<number>;
 }
 
-export async function paginate<T>(
-    model: PrismaListDelegate<T>,
-    { page, limit, skip }: PaginationQueryDto,
-    options: { where?: object; orderBy?: object } = {},
+export async function paginate<
+    T,
+    W = Record<string, unknown>,
+    O = Record<string, unknown>,
+>(
+    model: PrismaModelDelegate<T, W, O>,
+    { page, limit }: PaginationQueryDto,
+    options: { where?: W; orderBy?: O } = {},
 ): Promise<PaginatedResult<T>> {
+    const where = options.where ?? ({} as W);
+    const skip = (page - 1) * limit;
+
     const [data, total] = await Promise.all([
-        model.findMany({ ...options, skip, take: limit }),
-        model.count({ where: options.where }),
+        model.findMany({ where, orderBy: options.orderBy, skip, take: limit }),
+        model.count({ where }),
     ]);
 
     return {

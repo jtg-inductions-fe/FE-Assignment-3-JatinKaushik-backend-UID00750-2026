@@ -7,7 +7,7 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
     const configService = app.get(ConfigService);
-    const port = configService.get<number>('PORT');
+    const port = configService.getOrThrow<number>('PORT');
 
     // Validate and transform incoming payloads (Request DTOs)
     app.useGlobalPipes(
@@ -18,7 +18,7 @@ async function bootstrap() {
         }),
     );
 
-    await app.listen(port ?? 3000);
+    await app.listen(port);
 }
 bootstrap().catch((err) => {
     console.error('Application failed to start: ', err);
