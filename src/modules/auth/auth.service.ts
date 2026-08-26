@@ -1,31 +1,57 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+    ConflictException,
+    Inject,
+    Injectable,
+    UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import { comparePassword, hashPassword } from '@utils/hash.util';
-import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
-import { JwtPayload } from './types/jwt-payload.interface';
+import { JwtPayload, TokenPair } from './types/jwt-payload.interface';
 import { generateOpaqueToken, hashToken } from '@utils/token-hash.util';
 import { addDuration } from '@utils/duration.util';
-
-export interface TokenPair {
-    accessToken: string;
-    refreshToken: string;
-}
+import type { ExtendedPrismaClient } from '../../prisma/extensions/soft-delete.extension';
+import { EXTENDED_PRISMA_CLIENT } from '../../prisma/prisma.module';
+import {
+    LoginResponse,
+    RegisterResponse,
+    UserResponse,
+} from './types/auth-response.interface';
+import { Role } from '@enums/role.enum';
 
 @Injectable()
 export class AuthService {
     constructor(
-        private readonly prisma: PrismaService,
+        @Inject(EXTENDED_PRISMA_CLIENT)
+        private readonly prisma: ExtendedPrismaClient,
         private readonly jwtService: JwtService,
         private readonly config: ConfigService,
     ) {}
 
-    /** Creates a new active user profile with a securely hashed password. */
-    async register(dto: RegisterDto) {
-        const hashedPassword = await hashPassword(dto.password);
-        await this.prisma.user.create({
+    /**
+     * Registers a new user account.
+     *
+     * @param {RegisterDto} dto - The registration data.
+     * @returns {Promise<RegisterResponse>} The sanitized user object.
+     */
+    async register(dto: RegisterDto): Promise<RegisterResponse> {
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
+
+        if (existingUser) {
+            throw new ConflictException(
+                'An account with this email address already exists.',
+            );
+        }
+
+        const saltRounds = Number(
+            this.config.getOrThrow<number>('SALT_ROUNDS', 12),
+        );
+        const hashedPassword = await hashPassword(dto.password, saltRounds);
+        const user = await this.prisma.user.create({
             data: {
                 email: dto.email,
                 passwordHash: hashedPassword,
@@ -34,12 +60,19 @@ export class AuthService {
                 phone: dto.phone,
             },
         });
+
+        return { user: this.toSafeUser(user) };
     }
 
-    /** Verifies user credentials and generates a fresh pair of access and refresh tokens. */
-    async login(dto: LoginDto) {
+    /**
+     * Verifies user credentials and generates a fresh pair of access and refresh tokens.
+     *
+     * @param {LoginDto} dto - The login credentials containing email and password.
+     * @returns {Promise<LoginResponse>} The sanitized user profile and token pair.
+     */
+    async login(dto: LoginDto): Promise<LoginResponse> {
         const user = await this.prisma.user.findFirst({
-            where: { email: dto.email, deletedAt: null },
+            where: { email: dto.email },
         });
 
         if (
@@ -57,8 +90,14 @@ export class AuthService {
         return { user: this.toSafeUser(user), ...tokens };
     }
 
-    /** Validates an existing refresh token to extend a user's session with new keys. */
-    async refresh(rawRefreshToken: string) {
+    /**
+     * Validates an existing refresh token to extend a user's session with new token keys.
+     * Implements reuse detection to revoke all active sessions if a token is reused.
+     *
+     * @param {string} rawRefreshToken - The plain-text refresh token from client storage/cookies.
+     * @returns {Promise<TokenPair>} A newly issued access token and refresh token pair.
+     */
+    async refresh(rawRefreshToken: string): Promise<TokenPair> {
         const tokenHash = this.hashRefreshToken(rawRefreshToken);
         const existing = await this.prisma.refreshToken.findFirst({
             where: { tokenHash },
@@ -80,7 +119,7 @@ export class AuthService {
         }
 
         const user = await this.prisma.user.findFirst({
-            where: { id: existing.userId, deletedAt: null },
+            where: { id: existing.userId },
         });
         if (!user) {
             throw new UnauthorizedException('User no longer exists');
@@ -94,7 +133,12 @@ export class AuthService {
         return this.issueTokenPair(user.id, user.email, user.role);
     }
 
-    /** Ends a specific session by invalidating the provided refresh token. */
+    /**
+     * Ends a specific user session by invalidating the provided refresh token.
+     *
+     * @param {string} rawRefreshToken - The plain-text refresh token to invalidate.
+     * @returns {Promise<void>} Resolves when the token revocation update completes.
+     */
     async logout(rawRefreshToken: string): Promise<void> {
         const tokenHash = this.hashRefreshToken(rawRefreshToken);
         await this.prisma.refreshToken.updateMany({
@@ -103,7 +147,12 @@ export class AuthService {
         });
     }
 
-    /** Forces a logout across all devices by invalidating every active session for a user. */
+    /**
+     * Forces a global logout across all devices by invalidating every active session for a user.
+     *
+     * @param {string} userId - The unique identifier of the target user.
+     * @returns {Promise<void>} Resolves when all session tokens are marked revoked.
+     */
     async logoutAll(userId: string): Promise<void> {
         await this.prisma.refreshToken.updateMany({
             where: { userId, revokedAt: null },
@@ -111,10 +160,15 @@ export class AuthService {
         });
     }
 
-    /** Fetches the requesting user's profile details safely without password data. */
-    async getProfile(userId: string) {
+    /**
+     * Fetches the requesting user's profile details safely without sensitive password data.
+     *
+     * @param {string} userId - The ID of the authenticated user.
+     * @returns {Promise<UserResponse>} The sanitized user profile response.
+     */
+    async getProfile(userId: string): Promise<UserResponse> {
         const user = await this.prisma.user.findFirst({
-            where: { id: userId, deletedAt: null },
+            where: { id: userId },
         });
 
         if (!user) {
@@ -123,11 +177,19 @@ export class AuthService {
         return this.toSafeUser(user);
     }
 
-    /** Signs an access JWT and records a newly created refresh token in the database. */
+    /**
+     * Signs an access JWT and records a newly created refresh token in the database.
+     *
+     * @private
+     * @param {string} userId - The subject user's ID.
+     * @param {string} email - The user's registered email address.
+     * @param {Role} role - The assigned user authorization role.
+     * @returns {Promise<TokenPair>} Signed access token and newly generated refresh token.
+     */
     private async issueTokenPair(
         userId: string,
         email: string,
-        role: string,
+        role: Role,
     ): Promise<TokenPair> {
         const payload: JwtPayload = { sub: userId, email, role };
         const accessToken = await this.jwtService.signAsync(payload);
@@ -145,7 +207,13 @@ export class AuthService {
         return { accessToken, refreshToken: rawRefreshToken };
     }
 
-    /** Hashes a raw refresh token using a secure server secret for database lookups. */
+    /**
+     * Hashes a raw refresh token using a secure server secret for database lookups.
+     *
+     * @private
+     * @param {string} rawToken - The plain opaque refresh token.
+     * @returns {string} HMAC SHA-256 string representation of the token.
+     */
     private hashRefreshToken(rawToken: string): string {
         return hashToken(
             rawToken,
@@ -153,7 +221,14 @@ export class AuthService {
         );
     }
 
-    /** Remove passwordHash (and the internal deletedAt flag) before a user object ever reaches a response. */
+    /**
+     * Removes passwordHash and internal soft-delete flags before a user object reaches the response.
+     *
+     * @private
+     * @template T - User entity shape extending password and soft-delete properties.
+     * @param  user - Raw database user object.
+     * @returns Sanitized user profile object.
+     */
     private toSafeUser<
         T extends { passwordHash: string; deletedAt: Date | null },
     >(user: T) {

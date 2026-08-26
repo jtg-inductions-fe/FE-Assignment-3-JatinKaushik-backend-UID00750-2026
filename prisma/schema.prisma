@@ -79,6 +79,7 @@ model Restaurant {
   coupons    Coupon[]
   orders     Order[]
 
+  @@index([ownerId])
   @@map("restaurant")
 }
 
@@ -98,6 +99,7 @@ model Address {
   user       User?       @relation(fields: [userId], references: [id])
   restaurant Restaurant? @relation(fields: [restaurantId], references: [id])
 
+  @@index([userId])
   @@map("address")
 }
 
@@ -112,6 +114,7 @@ model RefreshToken {
 
   user User @relation(fields: [userId], references: [id])
 
+  @@index([userId])
   @@map("refresh_token")
 }
 
@@ -127,6 +130,7 @@ model MenuCategory {
   restaurant Restaurant @relation(fields: [restaurantId], references: [id])
   menuItems  MenuItem[]
 
+  @@index([restaurantId])
   @@map("menu_category")
 }
 
@@ -147,6 +151,8 @@ model MenuItem {
   category   MenuCategory @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
 
+  @@index([restaurantId])
+  @@index([categoryId])
   @@map("menu_item")
 }
 
@@ -163,6 +169,7 @@ model Coupon {
   restaurant Restaurant @relation(fields: [restaurantId], references: [id])
   orders     Order[]
 
+  @@index([restaurantId])
   @@map("coupon")
 }
 
@@ -188,6 +195,9 @@ model Order {
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
 
+  @@index([customerId])
+  @@index([restaurantId])
+  @@index([couponId])
   @@map("order")
 }
 
@@ -204,6 +214,8 @@ model OrderItem {
   order    Order    @relation(fields: [orderId], references: [id])
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
 
+  @@index([orderId])
+  @@index([menuItemId])
   @@map("order_item")
 }
 
@@ -217,5 +229,7 @@ model OrderStatusHistory {
   order         Order @relation(fields: [orderId], references: [id])
   changedByUser User  @relation("StatusChangedBy", fields: [changedBy], references: [id])
 
+  @@index([orderId])
+  @@index([changedBy])
   @@map("order_status_history")
 }

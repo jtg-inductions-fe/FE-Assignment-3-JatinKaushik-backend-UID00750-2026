@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from '../types/jwt-payload.interface';
 import { CurrentUserPayload } from '@interfaces/current-user.interface';
-import { Role } from '@enums/role.enum';
+import { EXTENDED_PRISMA_CLIENT } from '../../../prisma/prisma.module';
+import type { ExtendedPrismaClient } from '../../../prisma/extensions/soft-delete.extension';
 
 /**
  * JWT Security Strategy
@@ -12,7 +13,11 @@ import { Role } from '@enums/role.enum';
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-    constructor(config: ConfigService) {
+    constructor(
+        config: ConfigService,
+        @Inject(EXTENDED_PRISMA_CLIENT)
+        private readonly prisma: ExtendedPrismaClient,
+    ) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
@@ -20,11 +25,25 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         });
     }
 
-    validate(payload: JwtPayload): CurrentUserPayload {
-        return {
-            id: payload.sub,
-            email: payload.email,
-            role: payload.role as Role,
+    /**
+     * Validates JWT payload and verifies user presence in PostgreSQL database.
+     */
+    async validate(payload: JwtPayload): Promise<CurrentUserPayload> {
+        const user = await this.prisma.user.findFirst({
+            where: { id: payload.sub },
+            select: { id: true, email: true, role: true },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException(
+                'User account no longer exists or is deactivated.',
+            );
+        }
+        const currentUser: CurrentUserPayload = {
+            id: user.id,
+            email: user.email,
+            role: user.role,
         };
+        return currentUser;
     }
 }

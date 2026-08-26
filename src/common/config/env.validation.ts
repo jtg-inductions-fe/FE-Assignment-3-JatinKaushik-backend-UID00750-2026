@@ -9,11 +9,13 @@ export const envValidationSchema = Joi.object({
 
     JWT_ACCESS_EXPIRES_IN: Joi.alternatives()
         .try(Joi.number(), Joi.string().regex(/^(\d+([smhdwy]|ms))$/))
-        .required(),
+        .default('15m'),
 
     JWT_REFRESH_SECRET: Joi.string().required(),
 
     JWT_REFRESH_EXPIRES_IN: Joi.alternatives()
         .try(Joi.number(), Joi.string().regex(/^(\d+([smhdwy]|ms))$/))
-        .required(),
+        .default('7d'),
+
+    SALT_ROUNDS: Joi.number().default(12),
 });

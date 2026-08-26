@@ -2,6 +2,7 @@ import { ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '@decorators/public.decorator';
+import { isObservable, lastValueFrom } from 'rxjs';
 
 /**
  * Global auth guard making routes secure by default.
@@ -13,14 +14,26 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         super();
     }
 
-    canActivate(context: ExecutionContext) {
+    async canActivate(context: ExecutionContext): Promise<boolean> {
         const isPublic = this.reflector.getAllAndOverride<boolean>(
             IS_PUBLIC_KEY,
             [context.getHandler(), context.getClass()],
         );
+
         if (isPublic) {
             return true;
         }
-        return super.canActivate(context);
+
+        const result = super.canActivate(context);
+
+        if (typeof result === 'boolean') {
+            return result;
+        }
+
+        if (isObservable(result)) {
+            return lastValueFrom(result);
+        }
+
+        return result;
     }
 }

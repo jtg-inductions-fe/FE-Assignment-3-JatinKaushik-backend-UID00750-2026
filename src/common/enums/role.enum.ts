@@ -1,4 +1,4 @@
-export enum Role {
-    CUSTOMER = 'CUSTOMER',
-    RESTAURANT_OWNER = 'RESTAURANT_OWNER',
-}
+import { UserRole } from '@prisma-generated/enums';
+
+export type Role = UserRole;
+export const Role = UserRole;
