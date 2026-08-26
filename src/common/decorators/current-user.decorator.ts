@@ -1,12 +1,25 @@
-import { ExecutionContext, createParamDecorator } from '@nestjs/common';
+import {
+    ExecutionContext,
+    InternalServerErrorException,
+    createParamDecorator,
+} from '@nestjs/common';
 import { CurrentUserPayload } from '@interfaces/current-user.interface';
 
-/** Usage: `getProfile(@CurrentUser() user: CurrentUserPayload)` */
+/** Custom decorator to extract the authenticated user from the request context */
 export const CurrentUser = createParamDecorator(
-    (_data: unknown, ctx: ExecutionContext): CurrentUserPayload => {
+    (data: keyof CurrentUserPayload | undefined, ctx: ExecutionContext) => {
         const request = ctx
             .switchToHttp()
             .getRequest<{ user: CurrentUserPayload }>();
-        return request.user;
+
+        const user = request.user;
+
+        if (!user) {
+            throw new InternalServerErrorException(
+                'CurrentUser decorator used on a route without authenticated user context.',
+            );
+        }
+
+        return data ? user[data] : user;
     },
 );

@@ -2,6 +2,7 @@ import {
     IsEmail,
     IsEnum,
     IsString,
+    IsStrongPassword,
     Matches,
     MaxLength,
     MinLength,
@@ -15,11 +16,19 @@ export class RegisterDto {
     name!: string;
 
     @IsEmail()
+    @MaxLength(254)
     email!: string;
 
     @IsString()
     @MinLength(8)
     @MaxLength(72)
+    @IsStrongPassword({
+        minLength: 8,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1,
+    })
     password!: string;
 
     @IsString()
