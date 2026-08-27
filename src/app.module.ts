@@ -18,6 +18,7 @@ import { HttpExceptionFilter } from '@filters/http-exception.filter';
 import { AuthModule } from '@modules/auth/auth.module';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { RolesGuard } from '@guards/roles.guard';
+import { UsersModule } from '@modules/users/users.module';
 
 @Module({
     imports: [
@@ -32,6 +33,7 @@ import { RolesGuard } from '@guards/roles.guard';
         PrismaModule,
         HealthModule,
         AuthModule,
+        UsersModule,
     ],
     controllers: [AppController],
     providers: [
