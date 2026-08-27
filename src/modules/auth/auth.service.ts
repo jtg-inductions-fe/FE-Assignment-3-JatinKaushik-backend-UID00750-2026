@@ -5,7 +5,10 @@ import { RegisterDto } from './dto/register.dto';
 import { hashPassword } from '@utils/hash.util';
 import type { ExtendedPrismaClient } from '../../prisma/extensions/soft-delete.extension';
 import { EXTENDED_PRISMA_CLIENT } from '../../prisma/prisma.module';
-import { RegisterResponse } from './types/auth-response.interface';
+import {
+    RegisterResponse,
+    UserResponse,
+} from './types/auth-response.interface';
 
 @Injectable()
 export class AuthService {
@@ -34,7 +37,7 @@ export class AuthService {
         }
 
         const saltRounds = Number(
-            this.config.getOrThrow<number>('SALT_ROUNDS', 12),
+            this.config.getOrThrow<number>('SALT_ROUNDS'),
         );
         const hashedPassword = await hashPassword(dto.password, saltRounds);
         const user = await this.prisma.user.create({
@@ -52,8 +55,11 @@ export class AuthService {
 
     /** Removes passwordHash (and the internal deletedAt flag) before a user object ever reaches a response. */
     private toSafeUser<
-        T extends { passwordHash: string; deletedAt: Date | null },
-    >(user: T) {
+        T extends UserResponse & {
+            passwordHash: string;
+            deletedAt: Date | null;
+        },
+    >(user: T): UserResponse {
         const {
             passwordHash: _passwordHash,
             deletedAt: _deletedAt,
