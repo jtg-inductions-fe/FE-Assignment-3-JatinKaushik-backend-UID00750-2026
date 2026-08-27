@@ -36,6 +36,12 @@ export const softDeleteReadFilter = Prisma.defineExtension({
                     args.where = { deletedAt: null, ...args.where };
                 return query(args);
             },
+            async findUnique({ model, args, query }) {
+                if (isSoftDeleteModel(model)) {
+                    args.where = { deletedAt: null, ...args.where };
+                }
+                return query(args);
+            },
         },
     },
 });
