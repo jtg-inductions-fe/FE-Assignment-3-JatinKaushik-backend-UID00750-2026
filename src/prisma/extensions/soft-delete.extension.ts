@@ -14,18 +14,6 @@ function isSoftDeleteModel(model?: string): model is SoftDeleteModel {
 }
 
 /**
- * Accesses model operations from the extension context.
- */
-function getClientModelContext(ctx: unknown, model: SoftDeleteModel) {
-    const extCtx = Prisma.getExtensionContext(ctx) as unknown as Record<
-        string,
-        Record<string, (args: Record<string, unknown>) => Promise<unknown>>
-    >;
-
-    return extCtx[model];
-}
-
-/**
  * Auto-filter reads.
  * Merges `deletedAt: null` into standard read operations.
  */
@@ -50,13 +38,7 @@ export const softDeleteReadFilter = Prisma.defineExtension({
             },
             async findUnique({ model, args, query }) {
                 if (isSoftDeleteModel(model)) {
-                    const modelContext = getClientModelContext(this, model);
-
-                    const result = await modelContext.findFirst({
-                        ...args,
-                        where: { deletedAt: null, ...args.where },
-                    });
-                    return result;
+                    args.where = { deletedAt: null, ...args.where };
                 }
                 return query(args);
             },

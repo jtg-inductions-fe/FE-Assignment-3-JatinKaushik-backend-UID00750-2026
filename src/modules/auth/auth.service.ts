@@ -1,6 +1,5 @@
 import {
     ConflictException,
-    Inject,
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
@@ -12,20 +11,20 @@ import { LoginDto } from './dto/login.dto';
 import { JwtPayload, TokenPair } from './types/jwt-payload.interface';
 import { generateOpaqueToken, hashToken } from '@utils/token-hash.util';
 import { addDuration } from '@utils/duration.util';
-import type { ExtendedPrismaClient } from '../../prisma/extensions/soft-delete.extension';
-import { EXTENDED_PRISMA_CLIENT } from '../../prisma/prisma.module';
 import {
     LoginResponse,
     RegisterResponse,
     UserResponse,
 } from './types/auth-response.interface';
 import { Role } from '@enums/role.enum';
+import { UserRepository } from '@modules/users/repositories/user.repository';
+import { RefreshTokenRepository } from './respositories/refresh-token.repository';
 
 @Injectable()
 export class AuthService {
     constructor(
-        @Inject(EXTENDED_PRISMA_CLIENT)
-        private readonly prisma: ExtendedPrismaClient,
+        private readonly userRepository: UserRepository,
+        private readonly refreshTokenRepository: RefreshTokenRepository,
         private readonly jwtService: JwtService,
         private readonly config: ConfigService,
     ) {}
@@ -37,9 +36,7 @@ export class AuthService {
      * @returns {Promise<RegisterResponse>} The sanitized user object.
      */
     async register(dto: RegisterDto): Promise<RegisterResponse> {
-        const existingUser = await this.prisma.user.findUnique({
-            where: { email: dto.email },
-        });
+        const existingUser = await this.userRepository.findByEmail(dto.email);
 
         if (existingUser) {
             throw new ConflictException(
@@ -51,14 +48,12 @@ export class AuthService {
             this.config.getOrThrow<number>('SALT_ROUNDS'),
         );
         const hashedPassword = await hashPassword(dto.password, saltRounds);
-        const user = await this.prisma.user.create({
-            data: {
-                email: dto.email,
-                passwordHash: hashedPassword,
-                name: dto.name,
-                role: dto.role,
-                phone: dto.phone,
-            },
+        const user = await this.userRepository.create({
+            email: dto.email,
+            passwordHash: hashedPassword,
+            name: dto.name,
+            role: dto.role,
+            phone: dto.phone,
         });
 
         return { user: this.toSafeUser(user) };
@@ -71,9 +66,7 @@ export class AuthService {
      * @returns {Promise<LoginResponse>} The sanitized user profile and token pair.
      */
     async login(dto: LoginDto): Promise<LoginResponse> {
-        const user = await this.prisma.user.findFirst({
-            where: { email: dto.email },
-        });
+        const user = await this.userRepository.findByEmail(dto.email);
 
         if (
             !user ||
@@ -99,9 +92,8 @@ export class AuthService {
      */
     async refresh(rawRefreshToken: string): Promise<TokenPair> {
         const tokenHash = this.hashRefreshToken(rawRefreshToken);
-        const existing = await this.prisma.refreshToken.findFirst({
-            where: { tokenHash },
-        });
+        const existing =
+            await this.refreshTokenRepository.findByTokenHash(tokenHash);
 
         if (!existing) {
             throw new UnauthorizedException('Invalid refresh token');
@@ -118,17 +110,12 @@ export class AuthService {
             throw new UnauthorizedException('Refresh token has expired');
         }
 
-        const user = await this.prisma.user.findFirst({
-            where: { id: existing.userId },
-        });
+        const user = await this.userRepository.findById(existing.userId);
         if (!user) {
             throw new UnauthorizedException('User no longer exists');
         }
 
-        await this.prisma.refreshToken.update({
-            where: { id: existing.id },
-            data: { revokedAt: new Date() },
-        });
+        await this.refreshTokenRepository.revokeById(existing.id);
 
         return this.issueTokenPair(user.id, user.email, user.role);
     }
@@ -141,10 +128,7 @@ export class AuthService {
      */
     async logout(rawRefreshToken: string): Promise<void> {
         const tokenHash = this.hashRefreshToken(rawRefreshToken);
-        await this.prisma.refreshToken.updateMany({
-            where: { tokenHash, revokedAt: null },
-            data: { revokedAt: new Date() },
-        });
+        await this.refreshTokenRepository.revokeByTokenHash(tokenHash);
     }
 
     /**
@@ -154,10 +138,7 @@ export class AuthService {
      * @returns {Promise<void>} Resolves when all session tokens are marked revoked.
      */
     async logoutAll(userId: string): Promise<void> {
-        await this.prisma.refreshToken.updateMany({
-            where: { userId, revokedAt: null },
-            data: { revokedAt: new Date() },
-        });
+        await this.refreshTokenRepository.revokeAllByUserId(userId);
     }
 
     /**
@@ -167,9 +148,7 @@ export class AuthService {
      * @returns {Promise<UserResponse>} The sanitized user profile response.
      */
     async getProfile(userId: string): Promise<UserResponse> {
-        const user = await this.prisma.user.findFirst({
-            where: { id: userId },
-        });
+        const user = await this.userRepository.findById(userId);
 
         if (!user) {
             throw new UnauthorizedException('User no longer exists');
@@ -200,8 +179,10 @@ export class AuthService {
             this.config.get<string>('JWT_REFRESH_EXPIRES_IN')!,
         );
 
-        await this.prisma.refreshToken.create({
-            data: { userId, tokenHash, expiresAt },
+        await this.refreshTokenRepository.create({
+            user: { connect: { id: userId } },
+            tokenHash,
+            expiresAt,
         });
 
         return { accessToken, refreshToken: rawRefreshToken };

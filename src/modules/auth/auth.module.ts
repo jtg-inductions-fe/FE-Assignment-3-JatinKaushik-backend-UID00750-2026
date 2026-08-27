@@ -5,6 +5,8 @@ import { AuthController } from './auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { UserRepository } from '@modules/users/repositories/user.repository';
+import { RefreshTokenRepository } from './respositories/refresh-token.repository';
 
 @Module({
     imports: [
@@ -21,7 +23,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         }),
     ],
     controllers: [AuthController],
-    providers: [AuthService, JwtStrategy],
+    providers: [
+        AuthService,
+        JwtStrategy,
+        UserRepository,
+        RefreshTokenRepository,
+    ],
     exports: [AuthService],
 })
 export class AuthModule {}
