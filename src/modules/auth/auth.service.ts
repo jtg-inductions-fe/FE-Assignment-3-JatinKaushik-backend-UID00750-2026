@@ -48,7 +48,7 @@ export class AuthService {
         }
 
         const saltRounds = Number(
-            this.config.getOrThrow<number>('SALT_ROUNDS', 12),
+            this.config.getOrThrow<number>('SALT_ROUNDS'),
         );
         const hashedPassword = await hashPassword(dto.password, saltRounds);
         const user = await this.prisma.user.create({
@@ -230,8 +230,11 @@ export class AuthService {
      * @returns Sanitized user profile object.
      */
     private toSafeUser<
-        T extends { passwordHash: string; deletedAt: Date | null },
-    >(user: T) {
+        T extends UserResponse & {
+            passwordHash: string;
+            deletedAt: Date | null;
+        },
+    >(user: T): UserResponse {
         const {
             passwordHash: _passwordHash,
             deletedAt: _deletedAt,
