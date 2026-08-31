@@ -47,7 +47,6 @@ export class UsersService {
      * @param userId - Unique user identifier.
      */
     async deactivate(userId: string): Promise<void> {
-        // const user = await this.getActiveUserOrThrow(userId);
         await this.userRepository.softDelete(userId);
         await this.authService.logoutAll(userId);
     }
