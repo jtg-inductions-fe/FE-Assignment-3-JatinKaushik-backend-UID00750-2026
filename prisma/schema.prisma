@@ -1,0 +1,235 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CUSTOMER
+  RESTAURANT_OWNER
+}
+
+enum DietaryType {
+  VEG
+  NON_VEG
+  BOTH
+}
+
+enum VegType {
+  VEG
+  NON_VEG
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  REJECTED
+}
+
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String
+  email        String    @unique
+  passwordHash String
+  phone        String
+  role         UserRole
+  createdAt    DateTime  @default(now()) @db.Timestamptz(0)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(0)
+  deletedAt    DateTime? @db.Timestamptz(0)
+
+  restaurants    Restaurant[]
+  addresses      Address[]
+  refreshTokens  RefreshToken[]
+  ordersPlaced   Order[]              @relation("CustomerOrders")
+  statusChangesMade OrderStatusHistory[] @relation("StatusChangedBy")
+
+  @@map("user")
+}
+
+model Restaurant {
+  id          String    @id @default(uuid()) @db.Uuid
+  ownerId     String    @db.Uuid
+  name        String
+  description String?
+  dietaryType DietaryType
+  phone       String
+  openingTime DateTime  @db.Time(0)
+  closingTime DateTime  @db.Time(0)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(0)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(0)
+  deletedAt   DateTime? @db.Timestamptz(0)
+
+  owner      User           @relation(fields: [ownerId], references: [id])
+  address    Address?
+  categories MenuCategory[]
+  menuItems  MenuItem[]
+  coupons    Coupon[]
+  orders     Order[]
+
+  @@index([ownerId])
+  @@map("restaurant")
+}
+
+model Address {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String?   @db.Uuid
+  restaurantId String?   @unique @db.Uuid
+  street       String
+  city         String
+  state        String
+  pincode      String
+  label        String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(0)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(0)
+  deletedAt    DateTime? @db.Timestamptz(0)
+
+  user       User?       @relation(fields: [userId], references: [id])
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id])
+
+  @@index([userId])
+  @@map("address")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String
+  revokedAt DateTime? @db.Timestamptz(0)
+  expiresAt DateTime  @db.Timestamptz(0)
+  createdAt DateTime  @default(now()) @db.Timestamptz(0)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(0)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("refresh_token")
+}
+
+model MenuCategory {
+  id           String    @id @default(uuid()) @db.Uuid
+  restaurantId String    @db.Uuid
+  name         String
+  sortOrder    Int
+  createdAt    DateTime  @default(now()) @db.Timestamptz(0)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(0)
+  deletedAt    DateTime? @db.Timestamptz(0)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  menuItems  MenuItem[]
+
+  @@index([restaurantId])
+  @@map("menu_category")
+}
+
+model MenuItem {
+  id           String    @id @default(uuid()) @db.Uuid
+  restaurantId String    @db.Uuid
+  categoryId   String    @db.Uuid
+  name         String
+  description  String?
+  price        Decimal   @db.Decimal(10, 2)
+  stockQty     Int
+  vegType      VegType
+  createdAt    DateTime  @default(now()) @db.Timestamptz(0)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(0)
+  deletedAt    DateTime? @db.Timestamptz(0)
+
+  restaurant Restaurant   @relation(fields: [restaurantId], references: [id])
+  category   MenuCategory @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([restaurantId])
+  @@index([categoryId])
+  @@map("menu_item")
+}
+
+model Coupon {
+  id              String    @id @default(uuid()) @db.Uuid
+  restaurantId    String    @db.Uuid
+  code            String    @unique
+  discountPercent Decimal   @db.Decimal(5, 2)
+  expiresAt       DateTime  @db.Timestamptz(0)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(0)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(0)
+  deletedAt       DateTime? @db.Timestamptz(0)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  orders     Order[]
+
+  @@index([restaurantId])
+  @@map("coupon")
+}
+
+model Order {
+  id              String   @id @default(uuid()) @db.Uuid
+  customerId      String   @db.Uuid
+  restaurantId    String   @db.Uuid
+  couponId        String?  @db.Uuid
+  status          OrderStatus
+  deliveryStreet  String
+  deliveryCity    String
+  deliveryState   String
+  deliveryPincode String
+  subtotal        Decimal  @db.Decimal(10, 2)
+  platformFee     Decimal  @db.Decimal(10, 2)
+  discount        Decimal  @db.Decimal(10, 2)
+  createdAt       DateTime @default(now()) @db.Timestamptz(0)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(0)
+
+  customer      User                 @relation("CustomerOrders", fields: [customerId], references: [id])
+  restaurant    Restaurant           @relation(fields: [restaurantId], references: [id])
+  coupon        Coupon?              @relation(fields: [couponId], references: [id])
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+
+  @@index([customerId])
+  @@index([restaurantId])
+  @@index([couponId])
+  @@map("order")
+}
+
+model OrderItem {
+  id            String   @id @default(uuid()) @db.Uuid
+  orderId       String   @db.Uuid
+  menuItemId    String   @db.Uuid
+  nameSnapshot  String
+  priceSnapshot Decimal  @db.Decimal(10, 2)
+  quantity      Int
+  createdAt     DateTime @default(now()) @db.Timestamptz(0)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(0)
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_item")
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(uuid()) @db.Uuid
+  orderId   String   @db.Uuid
+  status    OrderStatus
+  changedBy String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(0)
+
+  order         Order @relation(fields: [orderId], references: [id])
+  changedByUser User  @relation("StatusChangedBy", fields: [changedBy], references: [id])
+
+  @@index([orderId])
+  @@index([changedBy])
+  @@map("order_status_history")
+}

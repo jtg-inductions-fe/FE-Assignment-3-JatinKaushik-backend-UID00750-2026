@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Validate Branch Name
+VALID_BRANCH_REGEX="^([A-Z]{2,3})_A[0-9]+_[0-9]{2}(/.*)?$"
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+
+# Skip check for default branches
+if [ "$BRANCH_NAME" = "main" ] || [ "$BRANCH_NAME" = "master" ] || [ "$BRANCH_NAME" = "develop" ]; then
+  echo "Skipping branch name validation for: $BRANCH_NAME"
+else
+  if ! echo "$BRANCH_NAME" | grep -Eq "$VALID_BRANCH_REGEX"; then
+    echo "Invalid branch name '$BRANCH_NAME'"
+    echo "Your branch must follow the pattern: [INITIALS]_A[NUM]_[INDEX] (e.g., AJ_A1_00 or AJ_A1_00/base-setup)"
+    exit 1
+  fi
+fi
+
+# Run pre-commit script
+npm run pre-commit
