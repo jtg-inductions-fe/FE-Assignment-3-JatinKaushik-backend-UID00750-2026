@@ -142,21 +142,6 @@ export class AuthService {
     }
 
     /**
-     * Fetches the requesting user's profile details safely without sensitive password data.
-     *
-     * @param {string} userId - The ID of the authenticated user.
-     * @returns {Promise<UserResponse>} The sanitized user profile response.
-     */
-    async getProfile(userId: string): Promise<UserResponse> {
-        const user = await this.userRepository.findById(userId);
-
-        if (!user) {
-            throw new UnauthorizedException('User no longer exists');
-        }
-        return this.toSafeUser(user);
-    }
-
-    /**
      * Signs an access JWT and records a newly created refresh token in the database.
      *
      * @private

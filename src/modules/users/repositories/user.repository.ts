@@ -37,4 +37,28 @@ export class UserRepository extends BaseRepository<
     async findById(id: string): Promise<User | null> {
         return this.findFirst({ id });
     }
+
+    /**
+     * Updates user profile fields by user ID.
+     *
+     * @param id - Unique user identifier.
+     * @param data - Profile update payload.
+     * @returns Updated user profile entity.
+     */
+    async updateProfile(
+        id: string,
+        data: Prisma.UserUpdateInput,
+    ): Promise<User> {
+        return this.update({ id }, data);
+    }
+
+    /**
+     * Soft-deletes a user account.
+     *
+     * @param id - Unique user identifier.
+     * @returns Updated user record.
+     */
+    async softDelete(id: string): Promise<void> {
+        await this.prisma.user.softDeleteWithCascade(id);
+    }
 }

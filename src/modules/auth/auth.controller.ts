@@ -1,7 +1,6 @@
 import {
     Body,
     Controller,
-    Get,
     HttpCode,
     HttpStatus,
     Post,
@@ -20,7 +19,6 @@ import type { Response } from 'express';
 import {
     LoginResponse,
     RegisterResponse,
-    UserResponse,
 } from './types/auth-response.interface';
 import { REFRESH_COOKIE_OPTIONS } from './configs/authCookies.config';
 
@@ -137,16 +135,5 @@ export class AuthController {
     ): Promise<void> {
         await this.authService.logoutAll(user.id);
         response.clearCookie('refreshToken', REFRESH_COOKIE_OPTIONS);
-    }
-
-    /**
-     * Retrieves the profile details of the currently authenticated user.
-     *
-     * @param user - Authenticated user payload extracted from JWT context.
-     * @returns Sanitized profile of the requesting user.
-     */
-    @Get('me')
-    me(@CurrentUser() user: CurrentUserPayload): Promise<UserResponse> {
-        return this.authService.getProfile(user.id);
     }
 }

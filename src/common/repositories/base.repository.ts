@@ -11,11 +11,21 @@ import { ExtendedPrismaClient } from '../../prisma/extensions/soft-delete.extens
 export interface PrismaModelDelegate<T, K, C, U> {
     findUnique(args: { where: K }): Promise<T | null>;
     findFirst(args: { where: Record<string, unknown> }): Promise<T | null>;
+    findMany(args?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, unknown> | Array<Record<string, unknown>>;
+        take?: number;
+        skip?: number;
+    }): Promise<T[]>;
     create(args: { data: C }): Promise<T>;
     update(args: { where: K; data: U }): Promise<T>;
     updateMany(args: {
         where: Record<string, unknown>;
         data: Record<string, unknown>;
+    }): Promise<{ count: number }>;
+    delete(args: { where: K }): Promise<T>;
+    deleteMany(args?: {
+        where?: Record<string, unknown>;
     }): Promise<{ count: number }>;
 }
 
@@ -61,6 +71,21 @@ export abstract class BaseRepository<T, K, C, U> {
     }
 
     /**
+     * Finds multiple entities matching specified criteria and options.
+     *
+     * @param params - Optional query filters, ordering, and pagination parameters.
+     * @returns Array of matching entities.
+     */
+    async findMany(params?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, unknown> | Array<Record<string, unknown>>;
+        take?: number;
+        skip?: number;
+    }): Promise<T[]> {
+        return this.model.findMany(params);
+    }
+
+    /**
      * Creates a new database record.
      *
      * @param data - Entity creation payload.
@@ -93,5 +118,29 @@ export abstract class BaseRepository<T, K, C, U> {
         data: Record<string, unknown>,
     ): Promise<{ count: number }> {
         return this.model.updateMany({ where, data });
+    }
+
+    /**
+     * Deletes a record matching unique criteria.
+     * Note: If the model has soft-delete enabled in Prisma extensions,
+     * this will be intercepted by soft-delete middleware if configured.
+     *
+     * @param where - Unique filter condition.
+     * @returns Deleted entity.
+     */
+    async delete(where: K): Promise<T> {
+        return this.model.delete({ where });
+    }
+
+    /**
+     * Deletes multiple records matching specified criteria.
+     *
+     * @param where - Optional filter condition criteria.
+     * @returns Count of deleted records.
+     */
+    async deleteMany(
+        where?: Record<string, unknown>,
+    ): Promise<{ count: number }> {
+        return this.model.deleteMany({ where });
     }
 }
