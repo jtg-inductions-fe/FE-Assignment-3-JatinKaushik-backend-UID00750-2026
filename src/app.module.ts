@@ -2,7 +2,12 @@ import { ClassSerializerInterceptor, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
+import {
+    APP_FILTER,
+    APP_GUARD,
+    APP_INTERCEPTOR,
+    Reflector,
+} from '@nestjs/core';
 import { AllExceptionsFilter } from '@filters/all-exceptions.filter';
 import { TransformInterceptor } from '@interceptors/transform.interceptor';
 import { envValidationSchema } from '@config/env.validation';
@@ -10,6 +15,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { PrismaExceptionFilter } from '@filters/prisma-exception.filter';
 import { HttpExceptionFilter } from '@filters/http-exception.filter';
+import { AuthModule } from '@modules/auth/auth.module';
+import { JwtAuthGuard } from '@guards/jwt-auth.guard';
+import { RolesGuard } from '@guards/roles.guard';
 
 @Module({
     imports: [
@@ -23,10 +31,21 @@ import { HttpExceptionFilter } from '@filters/http-exception.filter';
         }),
         PrismaModule,
         HealthModule,
+        AuthModule,
     ],
     controllers: [AppController],
     providers: [
         AppService,
+        // Guard to Authenticate the user
+        {
+            provide: APP_GUARD,
+            useClass: JwtAuthGuard,
+        },
+        // Guard to Authorise user based on role
+        {
+            provide: APP_GUARD,
+            useClass: RolesGuard,
+        },
         // Filter and format outgoing data (Response DTOs)
         {
             provide: APP_INTERCEPTOR,

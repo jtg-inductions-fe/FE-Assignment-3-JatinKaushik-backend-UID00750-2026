@@ -11,6 +11,9 @@
             "@interceptors/*": ["./src/common/interceptors/*"],
             "@interfaces/*": ["./src/common/interfaces/*"],
             "@utils/*": ["./src/common/utils/*"],
+            "@enums/*": ["./src/common/enums/*"],
+            "@decorators/*": ["./src/common/decorators/*"],
+            "@guards/*": ["./src/common/guards/*"],
             "@prisma-generated/*": ["./src/generated/prisma/*"],
             "@test/*": ["./test/*"]
         },
