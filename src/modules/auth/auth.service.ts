@@ -18,7 +18,7 @@ import {
 } from './types/auth-response.interface';
 import { Role } from '@enums/role.enum';
 import { UserRepository } from '@modules/users/repositories/user.repository';
-import { RefreshTokenRepository } from './respositories/refresh-token.repository';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 
 @Injectable()
 export class AuthService {

@@ -6,7 +6,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserRepository } from '@modules/users/repositories/user.repository';
-import { RefreshTokenRepository } from './respositories/refresh-token.repository';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 
 @Module({
     imports: [
