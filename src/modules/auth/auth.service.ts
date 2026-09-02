@@ -165,7 +165,7 @@ export class AuthService {
         );
 
         await this.refreshTokenRepository.create({
-            user: { connect: { id: userId } },
+            userId,
             tokenHash,
             expiresAt,
         });

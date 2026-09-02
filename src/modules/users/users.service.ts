@@ -90,7 +90,7 @@ export class UsersService {
         dto: CreateAddressDto,
     ): Promise<Address> {
         return this.addressRepository.create({
-            user: { connect: { id: userId } },
+            userId,
             street: dto.street,
             city: dto.city,
             state: dto.state,

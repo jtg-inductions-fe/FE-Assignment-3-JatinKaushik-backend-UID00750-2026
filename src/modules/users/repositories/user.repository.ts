@@ -8,7 +8,7 @@ import { EXTENDED_PRISMA_CLIENT } from '../../../prisma/prisma.module';
 export class UserRepository extends BaseRepository<
     User,
     Prisma.UserWhereUniqueInput,
-    Prisma.UserCreateInput,
+    Prisma.UserUncheckedCreateInput,
     Prisma.UserUpdateInput
 > {
     constructor(

@@ -8,7 +8,7 @@ import { EXTENDED_PRISMA_CLIENT } from '../../../prisma/prisma.module';
 export class RefreshTokenRepository extends BaseRepository<
     RefreshToken,
     Prisma.RefreshTokenWhereUniqueInput,
-    Prisma.RefreshTokenCreateInput,
+    Prisma.RefreshTokenUncheckedCreateInput,
     Prisma.RefreshTokenUpdateInput
 > {
     constructor(

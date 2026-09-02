@@ -24,7 +24,7 @@ export class RestaurantsService {
         dto: CreateRestaurantDto,
     ): Promise<Restaurant> {
         return this.restaurantRepository.createWithAddress({
-            owner: { connect: { id: ownerId } },
+            ownerId,
             name: dto.name,
             description: dto.description,
             dietaryType: dto.dietaryType,

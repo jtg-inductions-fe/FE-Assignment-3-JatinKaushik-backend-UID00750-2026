@@ -44,7 +44,7 @@ export class RestaurantRepository extends BaseRepository<
      * @returns Newly created restaurant with address included.
      */
     async createWithAddress(
-        data: Prisma.RestaurantCreateInput,
+        data: Prisma.RestaurantUncheckedCreateInput,
     ): Promise<Restaurant> {
         return this.prisma.restaurant.create({
             data,
