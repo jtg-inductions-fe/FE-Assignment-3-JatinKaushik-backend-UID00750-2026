@@ -16,7 +16,8 @@
             "@decorators/*": ["./src/common/decorators/*"],
             "@guards/*": ["./src/common/guards/*"],
             "@prisma-generated/*": ["./src/generated/prisma/*"],
-            "@test/*": ["./test/*"]
+            "@test/*": ["./test/*"],
+            "@constants/*": ["./src/common/constants/*"]
         },
         "resolvePackageJsonExports": true,
         "esModuleInterop": true,
