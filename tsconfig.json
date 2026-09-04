@@ -5,6 +5,7 @@
         "moduleResolution": "nodenext",
         "paths": {
             "@modules/*": ["./src/modules/*"],
+            "@common/*": ["./src/common/*"],
             "@config/*": ["./src/common/config/*"],
             "@dto/*": ["./src/common/dto/*"],
             "@filters/*": ["./src/common/filters/*"],
