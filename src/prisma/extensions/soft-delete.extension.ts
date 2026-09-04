@@ -11,7 +11,7 @@ const SOFT_DELETE_MODELS = [
 ] as const;
 type SoftDeleteModel = (typeof SOFT_DELETE_MODELS)[number];
 
-function isSoftDeleteModel(model?: string): model is SoftDeleteModel {
+export function isSoftDeleteModel(model?: string): model is SoftDeleteModel {
     return !!model && (SOFT_DELETE_MODELS as readonly string[]).includes(model);
 }
 

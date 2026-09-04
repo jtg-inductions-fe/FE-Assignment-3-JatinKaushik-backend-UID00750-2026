@@ -4,8 +4,6 @@ import { Prisma, Restaurant } from '@prisma-generated/client';
 import type { ExtendedPrismaClient } from '../../../prisma/extensions/soft-delete.extension';
 import { EXTENDED_PRISMA_CLIENT } from '../../../prisma/prisma.module';
 import { SearchRestaurantsQueryDto } from '../dto/search-restaurants-query.dto';
-import { Role } from '@enums/role.enum';
-import { CurrentUserPayload } from '@interfaces/current-user.interface';
 import { paginate } from '@utils/pagination.utils';
 import { PaginatedResult } from '@common/interfaces/paginated-result.interface';
 
@@ -61,7 +59,7 @@ export class RestaurantRepository extends BaseRepository<
      */
     async updateWithAddress(
         id: string,
-        data: Prisma.RestaurantUpdateInput,
+        data: Prisma.RestaurantUncheckedUpdateInput,
     ): Promise<Restaurant> {
         return this.prisma.restaurant.update({
             where: { id },
@@ -80,14 +78,14 @@ export class RestaurantRepository extends BaseRepository<
      * @returns Paginated list of restaurant records.
      */
     async findAllPaginated(
-        user: CurrentUserPayload,
         query: SearchRestaurantsQueryDto,
+        ownerId?: string,
     ): Promise<PaginatedResult<Restaurant>> {
         const where: Record<string, unknown> = {};
 
         // Scope query based on user role
-        if (user.role === Role.RESTAURANT_OWNER) {
-            where.ownerId = user.id;
+        if (ownerId) {
+            where.ownerId = ownerId;
         }
 
         // Apply name filter (case-insensitive)

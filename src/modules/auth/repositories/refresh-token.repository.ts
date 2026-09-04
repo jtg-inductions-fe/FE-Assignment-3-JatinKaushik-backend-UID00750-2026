@@ -9,7 +9,7 @@ export class RefreshTokenRepository extends BaseRepository<
     RefreshToken,
     Prisma.RefreshTokenWhereUniqueInput,
     Prisma.RefreshTokenUncheckedCreateInput,
-    Prisma.RefreshTokenUpdateInput
+    Prisma.RefreshTokenUncheckedUpdateInput
 > {
     constructor(
         @Inject(EXTENDED_PRISMA_CLIENT)

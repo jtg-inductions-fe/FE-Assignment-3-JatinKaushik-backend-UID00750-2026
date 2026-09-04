@@ -48,7 +48,6 @@ export class UsersService {
      */
     async deactivate(userId: string): Promise<void> {
         await this.userRepository.softDelete(userId);
-        await this.authService.logoutAll(userId);
     }
 
     /**

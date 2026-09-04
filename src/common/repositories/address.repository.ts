@@ -9,7 +9,7 @@ export class AddressRepository extends BaseRepository<
     Address,
     Prisma.AddressWhereUniqueInput,
     Prisma.AddressUncheckedCreateInput,
-    Prisma.AddressUpdateInput
+    Prisma.AddressUncheckedUpdateInput
 > {
     constructor(
         @Inject(EXTENDED_PRISMA_CLIENT)
