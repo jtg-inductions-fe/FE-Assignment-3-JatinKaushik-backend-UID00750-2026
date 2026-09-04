@@ -8,8 +8,8 @@ import { EXTENDED_PRISMA_CLIENT } from '../../prisma/prisma.module';
 export class AddressRepository extends BaseRepository<
     Address,
     Prisma.AddressWhereUniqueInput,
-    Prisma.AddressCreateInput,
-    Prisma.AddressUpdateInput
+    Prisma.AddressUncheckedCreateInput,
+    Prisma.AddressUncheckedUpdateInput
 > {
     constructor(
         @Inject(EXTENDED_PRISMA_CLIENT)

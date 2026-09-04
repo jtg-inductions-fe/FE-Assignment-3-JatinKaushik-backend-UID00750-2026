@@ -1,5 +1,9 @@
 import { Prisma } from '@prisma-generated/client';
-import { SOFT_DELETE_CASCADE_MAP } from './soft-delete-cascade.config';
+import {
+    ModelName,
+    SOFT_DELETE_CASCADE_MAP,
+} from './soft-delete-cascade.config';
+import { isSoftDeleteModel } from './soft-delete.extension';
 
 /**
  * Structural type shape for Prisma model delegates that support soft delete queries.
@@ -28,9 +32,9 @@ interface SoftDeleteDelegate {
  */
 function getDelegate(
     tx: Record<string, unknown>,
-    modelKey: keyof Prisma.TypeMap['model'],
+    modelKey: ModelName,
 ): SoftDeleteDelegate | undefined {
-    const delegate = tx[modelKey as string];
+    const delegate = tx[modelKey];
     if (!delegate || typeof delegate !== 'object') {
         return undefined;
     }
@@ -42,7 +46,7 @@ function getDelegate(
  */
 async function cascadeSoftDeleteRecursive(
     tx: Record<string, unknown>,
-    parentModelKey: keyof Prisma.TypeMap['model'],
+    parentModelKey: ModelName,
     parentIds: string[],
     deletedAt: Date,
 ): Promise<void> {
@@ -102,6 +106,7 @@ export const softDeleteCascadeExtension = Prisma.defineExtension((client) => {
                 async softDeleteWithCascade(
                     this: unknown,
                     id: string,
+                    txContext?: Record<string, unknown>,
                 ): Promise<void> {
                     const ctx = Prisma.getExtensionContext(this) as Record<
                         string,
@@ -111,52 +116,40 @@ export const softDeleteCascadeExtension = Prisma.defineExtension((client) => {
 
                     const modelKey = name as keyof Prisma.TypeMap['model'];
 
+                    if (!isSoftDeleteModel(modelKey)) {
+                        throw new Error(
+                            `Model '${modelKey}' does not support softDeleteWithCascade. Ensure it has a 'deletedAt' field.`,
+                        );
+                    }
+
                     const now = new Date();
 
-                    await client.$transaction(async (tx) => {
-                        const txRecord = tx as unknown as Record<
-                            string,
-                            unknown
-                        >;
-
-                        // Run recursive cascading soft delete
+                    const executeOps = async (
+                        activeTx: Record<string, unknown>,
+                    ) => {
                         await cascadeSoftDeleteRecursive(
-                            txRecord,
+                            activeTx,
                             modelKey,
                             [id],
                             now,
                         );
 
-                        // Soft-delete target entity
-                        const delegate = getDelegate(txRecord, modelKey);
+                        const delegate = getDelegate(activeTx, modelKey);
                         if (!delegate) return;
 
-                        if (modelKey === 'User') {
-                            const user = await delegate.findUnique({
-                                where: { id },
-                                select: { email: true },
-                            });
+                        await delegate.update({
+                            where: { id },
+                            data: { deletedAt: now },
+                        });
+                    };
 
-                            const anonymizedEmail = user?.email
-                                ? `${user.email}_deleted_${now.getTime()}`
-                                : undefined;
-
-                            await delegate.update({
-                                where: { id },
-                                data: {
-                                    deletedAt: now,
-                                    ...(anonymizedEmail && {
-                                        email: anonymizedEmail,
-                                    }),
-                                },
-                            });
-                        } else {
-                            await delegate.update({
-                                where: { id },
-                                data: { deletedAt: now },
-                            });
-                        }
-                    });
+                    if (txContext) {
+                        await executeOps(txContext);
+                    } else {
+                        await client.$transaction(async (newTx) => {
+                            await executeOps(newTx);
+                        });
+                    }
                 },
             },
         },

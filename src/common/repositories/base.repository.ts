@@ -143,4 +143,18 @@ export abstract class BaseRepository<T, K, C, U> {
     ): Promise<{ count: number }> {
         return this.model.deleteMany({ where });
     }
+
+    /**
+     * Wraps custom multi-step repository operations in an atomic database transaction.
+     *
+     * @param fn - Callback receiving the active transaction client.
+     * @returns Result of the callback execution.
+     */
+    async executeTransaction<R>(
+        fn: (tx: ExtendedPrismaClient) => Promise<R>,
+    ): Promise<R> {
+        return this.prisma.$transaction(async (tx) => {
+            return fn(tx as ExtendedPrismaClient);
+        });
+    }
 }

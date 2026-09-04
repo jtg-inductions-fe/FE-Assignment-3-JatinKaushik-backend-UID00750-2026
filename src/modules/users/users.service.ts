@@ -48,7 +48,6 @@ export class UsersService {
      */
     async deactivate(userId: string): Promise<void> {
         await this.userRepository.softDelete(userId);
-        await this.authService.logoutAll(userId);
     }
 
     /**
@@ -90,7 +89,7 @@ export class UsersService {
         dto: CreateAddressDto,
     ): Promise<Address> {
         return this.addressRepository.create({
-            user: { connect: { id: userId } },
+            userId,
             street: dto.street,
             city: dto.city,
             state: dto.state,
