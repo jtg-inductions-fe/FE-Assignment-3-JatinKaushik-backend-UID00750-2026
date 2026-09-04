@@ -1,16 +1,23 @@
 import { Prisma } from '@prisma-generated/client';
 
-export interface SoftDeleteRelation {
-    modelKey: keyof Prisma.TypeMap['model'];
-    foreignKey: string;
-    children?: SoftDeleteRelation[];
-}
+export type ModelName = keyof Prisma.TypeMap['model'];
+
+export type ModelFields<M extends ModelName> =
+    keyof Prisma.TypeMap['model'][M]['payload']['scalars'];
+
+export type SoftDeleteNode = {
+    [M in ModelName]: {
+        modelKey: M;
+        foreignKey: ModelFields<M>;
+        children?: SoftDeleteNode[];
+    };
+}[ModelName];
 
 /**
  * Map for soft-delete cascade rules across the application.
  */
 export const SOFT_DELETE_CASCADE_MAP: Partial<
-    Record<keyof Prisma.TypeMap['model'], SoftDeleteRelation[]>
+    Record<ModelName, SoftDeleteNode[]>
 > = {
     User: [
         { modelKey: 'Address', foreignKey: 'userId' },

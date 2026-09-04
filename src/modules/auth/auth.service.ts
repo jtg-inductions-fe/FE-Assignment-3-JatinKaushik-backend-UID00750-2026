@@ -90,7 +90,8 @@ export class AuthService {
      * @param {string} rawRefreshToken - The plain-text refresh token from client storage/cookies.
      * @returns {Promise<TokenPair>} A newly issued access token and refresh token pair.
      */
-    async refresh(rawRefreshToken: string): Promise<TokenPair> {
+    async refresh(rawRefreshToken?: string): Promise<TokenPair> {
+        this.assertRefreshTokenPresent(rawRefreshToken);
         const tokenHash = this.hashRefreshToken(rawRefreshToken);
         const existing =
             await this.refreshTokenRepository.findByTokenHash(tokenHash);
@@ -126,7 +127,8 @@ export class AuthService {
      * @param {string} rawRefreshToken - The plain-text refresh token to invalidate.
      * @returns {Promise<void>} Resolves when the token revocation update completes.
      */
-    async logout(rawRefreshToken: string): Promise<void> {
+    async logout(rawRefreshToken?: string): Promise<void> {
+        this.assertRefreshTokenPresent(rawRefreshToken);
         const tokenHash = this.hashRefreshToken(rawRefreshToken);
         await this.refreshTokenRepository.revokeByTokenHash(tokenHash);
     }
@@ -207,5 +209,21 @@ export class AuthService {
             ...safe
         } = user;
         return safe;
+    }
+
+    /**
+     * Asserts that a refresh token is present and not empty.
+     *
+     * @param refreshToken - The refresh token to validate.
+     * @throws {UnauthorizedException} If the token is missing, null, undefined, or an empty string.
+     */
+    private assertRefreshTokenPresent(
+        refreshToken?: string,
+    ): asserts refreshToken is string {
+        if (!refreshToken || refreshToken.trim() === '') {
+            throw new UnauthorizedException(
+                'Session expired. Please log in again.',
+            );
+        }
     }
 }
