@@ -5,13 +5,11 @@ import {
     HttpStatus,
     Post,
     Res,
-    UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from '@decorators/public.decorator';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { CurrentUser } from '@decorators/current-user.decorator';
 import type { CurrentUserPayload } from '@interfaces/current-user.interface';
 import { Cookies } from '@decorators/cookies.decorator';
@@ -20,14 +18,18 @@ import {
     LoginResponse,
     RegisterResponse,
 } from './types/auth-response.interface';
-import { REFRESH_COOKIE_OPTIONS } from './configs/authCookies.config';
+import { getRefreshCookieOptions } from './configs/authCookies.config';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * Controller handling public authentication operations.
  */
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) {}
+    constructor(
+        private readonly authService: AuthService,
+        private readonly configService: ConfigService,
+    ) {}
 
     /**
      * Registers a new customer or restaurant owner account.
@@ -60,7 +62,11 @@ export class AuthController {
         const { user, accessToken, refreshToken } =
             await this.authService.login(dto);
 
-        response.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+        response.cookie(
+            'refreshToken',
+            refreshToken,
+            getRefreshCookieOptions(this.configService),
+        );
 
         return { user, accessToken };
     }
@@ -76,21 +82,15 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post('refresh')
     async refresh(
-        @Cookies() dto: RefreshTokenDto,
+        @Cookies('refreshToken') refreshToken: string | undefined,
         @Res({ passthrough: true }) response: Response,
     ): Promise<{ accessToken: string }> {
-        if (!dto.refreshToken) {
-            throw new UnauthorizedException(
-                'Session expired. Please log in again.',
-            );
-        }
-
-        const tokens = await this.authService.refresh(dto.refreshToken);
+        const tokens = await this.authService.refresh(refreshToken);
 
         response.cookie(
             'refreshToken',
             tokens.refreshToken,
-            REFRESH_COOKIE_OPTIONS,
+            getRefreshCookieOptions(this.configService),
         );
 
         return { accessToken: tokens.accessToken };
@@ -106,18 +106,15 @@ export class AuthController {
     @HttpCode(HttpStatus.NO_CONTENT)
     @Post('logout')
     async logout(
-        @Cookies() dto: RefreshTokenDto,
+        @Cookies('refreshToken') refreshToken: string | undefined,
         @Res({ passthrough: true }) response: Response,
     ): Promise<void> {
-        if (!dto.refreshToken) {
-            throw new UnauthorizedException(
-                'Session expired. Please log in again.',
-            );
-        }
+        await this.authService.logout(refreshToken);
 
-        await this.authService.logout(dto.refreshToken);
-
-        response.clearCookie('refreshToken', REFRESH_COOKIE_OPTIONS);
+        response.clearCookie(
+            'refreshToken',
+            getRefreshCookieOptions(this.configService),
+        );
     }
 
     /**
@@ -134,6 +131,9 @@ export class AuthController {
         @Res({ passthrough: true }) response: Response,
     ): Promise<void> {
         await this.authService.logoutAll(user.id);
-        response.clearCookie('refreshToken', REFRESH_COOKIE_OPTIONS);
+        response.clearCookie(
+            'refreshToken',
+            getRefreshCookieOptions(this.configService),
+        );
     }
 }
