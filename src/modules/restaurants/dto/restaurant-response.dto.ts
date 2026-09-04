@@ -12,18 +12,14 @@ export class RestaurantResponseDto {
     @Expose() phone!: string;
 
     @Expose()
-    @Transform(
-        ({ value }: { value: Date | string | undefined }) =>
-            value &&
-            (typeof value === 'string' ? value : formatTimeString(value)),
+    @Transform(({ value }) =>
+        value instanceof Date ? formatTimeString(value) : undefined,
     )
     openingTime!: string;
 
     @Expose()
-    @Transform(
-        ({ value }: { value: Date | null | undefined }) =>
-            value &&
-            (typeof value === 'string' ? value : formatTimeString(value)),
+    @Transform(({ value }) =>
+        value instanceof Date ? formatTimeString(value) : undefined,
     )
     closingTime!: string;
 

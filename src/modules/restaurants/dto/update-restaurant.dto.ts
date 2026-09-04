@@ -11,7 +11,7 @@ import {
 import { Type } from 'class-transformer';
 import { PHONE_REGEX, TIME_24H_REGEX } from '@constants/validation.constants';
 import { DietaryType } from '@prisma-generated/enums';
-import { UpdateRestaurantAddressDto } from './update-restaurant-address.dto';
+import { RestaurantAddressInputDto } from './restaurant-address-input.dto';
 
 export class UpdateRestaurantDto {
     @IsOptional()
@@ -52,6 +52,6 @@ export class UpdateRestaurantDto {
     @IsOptional()
     @IsObject()
     @ValidateNested()
-    @Type(() => UpdateRestaurantAddressDto)
-    address?: UpdateRestaurantAddressDto;
+    @Type(() => RestaurantAddressInputDto)
+    address?: RestaurantAddressInputDto;
 }

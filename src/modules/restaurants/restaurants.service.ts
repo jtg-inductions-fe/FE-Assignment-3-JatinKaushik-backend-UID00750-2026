@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { SearchRestaurantsQueryDto } from './dto/search-restaurants-query.dto';
@@ -7,6 +12,7 @@ import { parseTimeString } from '@utils/time.util';
 import { RestaurantRepository } from './repositories/restaurants.repository';
 import { Restaurant } from '@prisma-generated/client';
 import { PaginatedResult } from '@interfaces/paginated-result.interface';
+import { Role } from '@common/enums/role.enum';
 
 @Injectable()
 export class RestaurantsService {
@@ -23,21 +29,32 @@ export class RestaurantsService {
         ownerId: string,
         dto: CreateRestaurantDto,
     ): Promise<Restaurant> {
-        return this.restaurantRepository.createWithAddress({
+        const existing = await this.restaurantRepository.findFirst({
             ownerId,
             name: dto.name,
-            description: dto.description,
-            dietaryType: dto.dietaryType,
-            phone: dto.phone,
-            openingTime: parseTimeString(dto.openingTime),
-            closingTime: parseTimeString(dto.closingTime),
+        });
+
+        if (existing) {
+            throw new ConflictException(
+                'You already have an active restaurant with this name',
+            );
+        }
+
+        if (dto.closingTime <= dto.openingTime) {
+            throw new BadRequestException(
+                `Invalid operating hours: closingTime (${dto.closingTime}) must be later than openingTime (${dto.openingTime}).`,
+            );
+        }
+
+        const { openingTime, closingTime, address, ...baseFields } = dto;
+
+        return this.restaurantRepository.createWithAddress({
+            ...baseFields,
+            ownerId,
+            openingTime: parseTimeString(openingTime),
+            closingTime: parseTimeString(closingTime),
             address: {
-                create: {
-                    street: dto.address.street,
-                    city: dto.address.city,
-                    state: dto.address.state,
-                    pincode: dto.address.pincode,
-                },
+                create: { ...address },
             },
         });
     }
@@ -56,29 +73,40 @@ export class RestaurantsService {
         restaurantId: string,
         dto: UpdateRestaurantDto,
     ): Promise<Restaurant> {
-        await this.assertOwnedRestaurant(ownerId, restaurantId);
+        const currentRestaurant = await this.assertOwnedRestaurant(
+            ownerId,
+            restaurantId,
+        );
 
-        return this.restaurantRepository.updateWithAddress(restaurantId, {
-            ...(dto.name !== undefined && { name: dto.name }),
-            ...(dto.description !== undefined && {
-                description: dto.description,
-            }),
-            ...(dto.dietaryType !== undefined && {
-                dietaryType: dto.dietaryType,
-            }),
-            ...(dto.phone !== undefined && { phone: dto.phone }),
-            ...(dto.openingTime !== undefined && {
-                openingTime: parseTimeString(dto.openingTime),
-            }),
-            ...(dto.closingTime !== undefined && {
-                closingTime: parseTimeString(dto.closingTime),
-            }),
-            ...(dto.address && {
+        const { openingTime, closingTime, address, ...baseFields } = dto;
+
+        const finalOpening = openingTime ?? currentRestaurant.openingTime;
+        const finalClosing = closingTime ?? currentRestaurant.closingTime;
+
+        if (finalOpening && finalClosing && finalClosing <= finalOpening) {
+            throw new BadRequestException(
+                'Invalid operating hours: closingTime must be later than openingTime.',
+            );
+        }
+
+        const updateData = {
+            ...baseFields,
+            ...(openingTime && { openingTime: parseTimeString(openingTime) }),
+            ...(closingTime && { closingTime: parseTimeString(closingTime) }),
+            ...(address && {
                 address: {
-                    update: { ...dto.address },
+                    upsert: {
+                        create: { ...address },
+                        update: { ...address },
+                    },
                 },
             }),
-        });
+        };
+
+        return this.restaurantRepository.updateWithAddress(
+            restaurantId,
+            updateData,
+        );
     }
 
     /**
@@ -104,7 +132,9 @@ export class RestaurantsService {
         user: CurrentUserPayload,
         query: SearchRestaurantsQueryDto,
     ): Promise<PaginatedResult<Restaurant>> {
-        return this.restaurantRepository.findAllPaginated(user, query);
+        const ownerId =
+            user.role === Role.RESTAURANT_OWNER ? user.id : undefined;
+        return this.restaurantRepository.findAllPaginated(query, ownerId);
     }
 
     /**
