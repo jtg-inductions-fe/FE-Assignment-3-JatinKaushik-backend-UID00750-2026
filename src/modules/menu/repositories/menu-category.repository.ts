@@ -3,16 +3,7 @@ import { BaseRepository } from '@common/repositories/base.repository';
 import { MenuCategory, Prisma } from '@prisma-generated/client';
 import type { ExtendedPrismaClient } from '../../../prisma/extensions/soft-delete.extension';
 import { EXTENDED_PRISMA_CLIENT } from '../../../prisma/prisma.module';
-
-/**
- * Standard default menu categories seeded for new restaurants.
- */
-export const DEFAULT_MENU_CATEGORIES = [
-    { name: 'Starters', sortOrder: 1 },
-    { name: 'Main Course', sortOrder: 2 },
-    { name: 'Beverages', sortOrder: 3 },
-    { name: 'Desserts', sortOrder: 4 },
-];
+import { DEFAULT_MENU_CATEGORIES } from '@common/constants/menu.constants';
 
 @Injectable()
 export class MenuCategoryRepository extends BaseRepository<
@@ -72,7 +63,6 @@ export class MenuCategoryRepository extends BaseRepository<
             orderBy: { sortOrder: 'asc' },
             include: {
                 menuItems: {
-                    where: { deletedAt: null },
                     orderBy: { name: 'asc' },
                 },
             },

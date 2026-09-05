@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { MenuItemRepository } from './repositories/menu-item.repository';
 import { MenuCategoryRepository } from './repositories/menu-category.repository';
 import { RestaurantRepository } from '../restaurants/repositories/restaurants.repository';
 import { MenuCategory, MenuItem } from '@prisma-generated/client';
+import { CurrentUserPayload } from '@common/interfaces/current-user.interface';
 
 @Injectable()
 export class MenuService {
@@ -32,6 +37,17 @@ export class MenuService {
             dto.categoryId,
             restaurantId,
         );
+
+        // Prevent duplicate item names inside the same restaurant
+        const existingItem = await this.menuItemRepository.findFirst({
+            restaurantId,
+            name: dto.name,
+        });
+        if (existingItem) {
+            throw new ConflictException(
+                `A menu item with name "${dto.name}" already exists in this restaurant`,
+            );
+        }
 
         return this.menuItemRepository.create({
             restaurantId,
@@ -66,19 +82,12 @@ export class MenuService {
             );
         }
 
+        const { ...updateFields } = dto;
+
         return this.menuItemRepository.update(
             { id: menuItemId },
             {
-                ...(dto.categoryId !== undefined && {
-                    categoryId: dto.categoryId,
-                }),
-                ...(dto.name !== undefined && { name: dto.name }),
-                ...(dto.description !== undefined && {
-                    description: dto.description,
-                }),
-                ...(dto.price !== undefined && { price: dto.price }),
-                ...(dto.stockQty !== undefined && { stockQty: dto.stockQty }),
-                ...(dto.vegType !== undefined && { vegType: dto.vegType }),
+                ...updateFields,
             },
         );
     }
@@ -101,10 +110,18 @@ export class MenuService {
      * @param restaurantId - Target restaurant identifier.
      * @returns Categorized menu categories with items attached.
      */
-    async getCategorizedMenu(restaurantId: string): Promise<MenuCategory[]> {
+    async getCategorizedMenu(
+        restaurantId: string,
+        user: CurrentUserPayload,
+    ): Promise<MenuCategory[]> {
+        if (user.role === 'RESTAURANT_OWNER') {
+            await this.assertRestaurantOwnedBy(restaurantId, user.id);
+        }
+
         const restaurant = await this.restaurantRepository.findUnique({
             id: restaurantId,
         });
+
         if (!restaurant) {
             throw new NotFoundException('Restaurant not found');
         }

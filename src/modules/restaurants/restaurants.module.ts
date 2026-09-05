@@ -6,5 +6,6 @@ import { RestaurantRepository } from './repositories/restaurants.repository';
 @Module({
     controllers: [RestaurantsController],
     providers: [RestaurantsService, RestaurantRepository],
+    exports: [RestaurantsService, RestaurantRepository],
 })
 export class RestaurantsModule {}

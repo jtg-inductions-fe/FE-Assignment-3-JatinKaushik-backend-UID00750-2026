@@ -15,6 +15,12 @@ export class MenuItemResponseDto {
 
     @Expose() stockQty!: number;
     @Expose() vegType!: VegType;
+
+    @Expose({ name: 'is_available' })
+    get isAvailable(): boolean {
+        return this.stockQty > 0;
+    }
+
     @Expose() createdAt!: Date;
     @Expose() updatedAt!: Date;
 }
