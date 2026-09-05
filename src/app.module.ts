@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { RolesGuard } from '@guards/roles.guard';
 import { UsersModule } from '@modules/users/users.module';
 import { RestaurantsModule } from '@modules/restaurants/restaurants.module';
+import { MenuModule } from '@modules/menu/menu.module';
 
 @Module({
     imports: [
@@ -36,6 +37,7 @@ import { RestaurantsModule } from '@modules/restaurants/restaurants.module';
         AuthModule,
         UsersModule,
         RestaurantsModule,
+        MenuModule,
     ],
     controllers: [AppController],
     providers: [
