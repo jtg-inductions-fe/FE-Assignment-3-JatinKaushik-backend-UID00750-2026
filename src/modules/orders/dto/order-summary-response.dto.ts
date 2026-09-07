@@ -1,4 +1,4 @@
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
 export class OrderSummaryResponseDto {
     @Expose() id!: string;
@@ -7,18 +7,18 @@ export class OrderSummaryResponseDto {
     @Expose() status!: string;
 
     @Expose()
-    @Transform(({ value }) => Number(value))
+    @Type(() => Number)
     subtotal!: number;
 
     @Expose()
-    @Transform(({ value }) => Number(value))
+    @Type(() => Number)
     platformFee!: number;
 
     @Expose()
-    @Transform(({ value }) => Number(value))
+    @Type(() => Number)
     discount!: number;
 
-    @Expose({ name: 'total' })
+    @Expose({ name: 'total', toPlainOnly: true })
     get totalAmount(): number {
         return (
             Math.round(

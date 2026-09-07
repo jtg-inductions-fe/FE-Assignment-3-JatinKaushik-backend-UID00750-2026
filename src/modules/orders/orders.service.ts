@@ -11,14 +11,12 @@ import { calculatePricing } from './utils/pricing.util';
 import { assertValidOwnerTransition } from './utils/order-status.util';
 import { OrderStatus, Prisma } from '@prisma-generated/client';
 import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
-import {
-    OrderRepository,
-    OrderWithDetails,
-} from './repositories/orders.repository';
+import { OrderRepository } from './repositories/orders.repository';
 import { RestaurantRepository } from '../restaurants/repositories/restaurants.repository';
 import { AddressRepository } from '@common/repositories/address.repository';
 import { MenuItemRepository } from '../menu/repositories/menu-item.repository';
 import { PaginatedResult } from '@common/interfaces/paginated-result.interface';
+import { OrderWithDetails } from './types/order.types';
 
 @Injectable()
 export class OrdersService {
@@ -41,7 +39,7 @@ export class OrdersService {
         customerId: string,
         dto: PlaceOrderDto,
     ): Promise<OrderWithDetails> {
-        // 1. Validate restaurant existence
+        // Validate restaurant existence
         const restaurant = await this.restaurantRepository.findFirst({
             id: dto.restaurantId,
         });
@@ -49,7 +47,7 @@ export class OrdersService {
             throw new NotFoundException('Restaurant not found');
         }
 
-        // 2. Validate customer delivery address
+        // Validate customer delivery address
         const address = await this.addressRepository.findFirst({
             id: dto.deliveryAddressId,
             userId: customerId,
@@ -58,7 +56,7 @@ export class OrdersService {
             throw new NotFoundException('Delivery address not found');
         }
 
-        // 3. Ensure no duplicate menu items exist in requested payload
+        // Ensure no duplicate menu items exist in requested payload
         const menuItemIds = dto.items.map((item) => item.menuItemId);
         if (new Set(menuItemIds).size !== menuItemIds.length) {
             throw new BadRequestException(
@@ -66,7 +64,7 @@ export class OrdersService {
             );
         }
 
-        // 4. Validate menu items belong to the target restaurant
+        // Validate menu items belong to the target restaurant
         const menuItems = await this.menuItemRepository.findMany({
             where: {
                 id: { in: menuItemIds },
@@ -81,7 +79,7 @@ export class OrdersService {
 
         const menuItemsById = new Map(menuItems.map((item) => [item.id, item]));
 
-        // 5. Build price and name snapshot line items
+        // Build price and name snapshot line items
         const lineItems = dto.items.map((requested) => {
             const menuItem = menuItemsById.get(requested.menuItemId)!;
             return {
@@ -94,7 +92,7 @@ export class OrdersService {
 
         const pricing = calculatePricing(lineItems);
 
-        // 6. Execute atomic stock decrement and order creation transaction
+        // Execute atomic stock decrement and order creation transaction
         return this.orderRepository.executeTransaction(async (tx) => {
             for (const line of lineItems) {
                 const affectedCount =

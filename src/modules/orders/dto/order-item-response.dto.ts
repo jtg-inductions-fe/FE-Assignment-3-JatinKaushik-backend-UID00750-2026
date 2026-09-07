@@ -1,4 +1,4 @@
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
 export class OrderItemResponseDto {
     @Expose() id!: string;
@@ -6,12 +6,12 @@ export class OrderItemResponseDto {
     @Expose() nameSnapshot!: string;
 
     @Expose()
-    @Transform(({ value }) => Number(value))
+    @Type(() => Number)
     priceSnapshot!: number;
 
     @Expose() quantity!: number;
 
-    @Expose({ name: 'itemTotal' })
+    @Expose({ name: 'itemTotal', toPlainOnly: true })
     get itemTotal(): number {
         return Math.round(this.priceSnapshot * this.quantity * 100) / 100;
     }

@@ -6,15 +6,8 @@ import { EXTENDED_PRISMA_CLIENT } from '../../../prisma/prisma.module';
 import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
 import { paginate } from '@utils/pagination.utils';
 import { PaginatedResult } from '@common/interfaces/paginated-result.interface';
-
-export const ORDER_DETAIL_INCLUDE = {
-    items: true,
-    statusHistory: { orderBy: { createdAt: 'asc' as const } },
-} satisfies Prisma.OrderInclude;
-
-export type OrderWithDetails = Prisma.OrderGetPayload<{
-    include: typeof ORDER_DETAIL_INCLUDE;
-}>;
+import { OrderWithDetails } from '../types/order.types';
+import { ORDER_DETAIL_INCLUDE } from '@common/constants/order.constants';
 
 @Injectable()
 export class OrderRepository extends BaseRepository<

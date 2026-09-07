@@ -20,7 +20,7 @@ import { CurrentUser } from '@decorators/current-user.decorator';
 import type { CurrentUserPayload } from '@interfaces/current-user.interface';
 import { Serialize } from '@interceptors/serialize.interceptor';
 import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
-import { OrderWithDetails } from './repositories/orders.repository';
+import { OrderWithDetails } from './types/order.types';
 
 @Controller('orders')
 export class OrdersController {
