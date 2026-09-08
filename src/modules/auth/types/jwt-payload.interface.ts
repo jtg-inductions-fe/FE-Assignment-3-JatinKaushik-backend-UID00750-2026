@@ -5,3 +5,8 @@ export interface JwtPayload {
     email: string;
     role: Role;
 }
+
+export interface TokenPair {
+    accessToken: string;
+    refreshToken: string;
+}

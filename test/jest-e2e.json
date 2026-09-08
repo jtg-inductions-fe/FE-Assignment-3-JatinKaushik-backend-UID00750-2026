@@ -1,9 +1,23 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
-  "testEnvironment": "node",
-  "testRegex": ".e2e-spec.ts$",
-  "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
-  }
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": ".",
+    "testEnvironment": "node",
+    "testRegex": ".e2e-spec.ts$",
+    "transform": {
+        "^.+\\.(t|j)s$": ["ts-jest", { "useESM": true }]
+    },
+    "moduleNameMapper": {
+        "^@modules/(.*)$": "<rootDir>/../src/modules/$1",
+        "^@config/(.*)$": "<rootDir>/../src/common/config/$1",
+        "^@common/(.*)$": "<rootDir>/../src/common/$1",
+        "^@utils/(.*)$": "<rootDir>/../src/common/utils/$1",
+        "^@decorators/(.*)$": "<rootDir>/../src/common/decorators/$1",
+        "^@guards/(.*)$": "<rootDir>/../src/common/guards/$1",
+        "^@enums/(.*)$": "<rootDir>/../src/common/enums/$1",
+        "^@interfaces/(.*)$": "<rootDir>/../src/common/interfaces/$1",
+        "^@filters/(.*)$": "<rootDir>/../src/common/filters/$1",
+        "^@interceptors/(.*)$": "<rootDir>/../src/common/interceptors/$1",
+        "^@prisma-generated/(.*)$": ["<rootDir>/../src/generated/prisma/$1"],
+        "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
 }

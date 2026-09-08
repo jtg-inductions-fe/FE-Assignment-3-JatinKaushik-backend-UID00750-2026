@@ -12,3 +12,9 @@ export interface UserResponse {
 export interface RegisterResponse {
     user: UserResponse;
 }
+
+export interface LoginResponse {
+    user: UserResponse;
+    accessToken: string;
+    refreshToken: string;
+}
