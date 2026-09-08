@@ -1,7 +1,9 @@
 import { Prisma, PrismaClient } from '@prisma-generated/client';
+import { softDeleteCascadeExtension } from './soft-delete-cascade.extension';
 
 const SOFT_DELETE_MODELS = [
     'User',
+    'Address',
     'Restaurant',
     'MenuCategory',
     'MenuItem',
@@ -9,7 +11,7 @@ const SOFT_DELETE_MODELS = [
 ] as const;
 type SoftDeleteModel = (typeof SOFT_DELETE_MODELS)[number];
 
-function isSoftDeleteModel(model?: string): model is SoftDeleteModel {
+export function isSoftDeleteModel(model?: string): model is SoftDeleteModel {
     return !!model && (SOFT_DELETE_MODELS as readonly string[]).includes(model);
 }
 
@@ -50,7 +52,9 @@ export const softDeleteReadFilter = Prisma.defineExtension({
  * High-level orchestration function.
  */
 export function applySoftDeleteExtensions<C extends PrismaClient>(client: C) {
-    return client.$extends(softDeleteReadFilter);
+    return client
+        .$extends(softDeleteReadFilter)
+        .$extends(softDeleteCascadeExtension);
 }
 
 export type ExtendedPrismaClient = ReturnType<typeof applySoftDeleteExtensions>;
