@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { Role } from '@enums/role.enum';
+import { ConfigService } from '@nestjs/config';
 
 describe('AuthController (Unit Tests)', () => {
     let controller: AuthController;
@@ -31,6 +32,15 @@ describe('AuthController (Unit Tests)', () => {
                 {
                     provide: AuthService,
                     useValue: mockAuthService,
+                },
+                {
+                    provide: ConfigService,
+                    useValue: {
+                        getOrThrow: jest.fn((key: string) => {
+                            if (key === 'JWT_REFRESH_EXPIRES_IN') return '7d';
+                            return null;
+                        }),
+                    },
                 },
             ],
         }).compile();

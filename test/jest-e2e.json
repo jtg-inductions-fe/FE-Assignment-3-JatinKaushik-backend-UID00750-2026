@@ -18,6 +18,8 @@
         "^@filters/(.*)$": "<rootDir>/../src/common/filters/$1",
         "^@interceptors/(.*)$": "<rootDir>/../src/common/interceptors/$1",
         "^@prisma-generated/(.*)$": ["<rootDir>/../src/generated/prisma/$1"],
+        "^@dto/(.*)$": "<rootDir>/../src/common/dto/$1",
+        "^@constants/(.*)$": "<rootDir>/../src/common/constants/$1",
         "^(\\.{1,2}/.*)\\.js$": "$1"
     }
 }
