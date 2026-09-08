@@ -23,6 +23,22 @@ export class SerializeInterceptor implements NestInterceptor {
     ): Observable<unknown> {
         return next.handle().pipe(
             map((data: unknown) => {
+                // Check if the response matches a paginated payload structure
+                if (
+                    data &&
+                    typeof data === 'object' &&
+                    'data' in data &&
+                    Array.isArray(data.data)
+                ) {
+                    return {
+                        ...data,
+                        data: plainToInstance(this.dto, data.data, {
+                            excludeExtraneousValues: true,
+                        }),
+                    };
+                }
+
+                // Default behavior for single objects or normal flat arrays
                 return plainToInstance(this.dto, data, {
                     excludeExtraneousValues: true,
                 });

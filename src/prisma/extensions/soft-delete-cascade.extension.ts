@@ -138,7 +138,7 @@ export const softDeleteCascadeExtension = Prisma.defineExtension((client) => {
                         if (!delegate) return;
 
                         await delegate.update({
-                            where: { id },
+                            where: { id, deletedAt: null },
                             data: { deletedAt: now },
                         });
                     };
