@@ -54,7 +54,6 @@ Create a `.env` file in the project root:
 
 ```env
 PORT=3000
-NODE_ENV=development
 
 # Database
 DATABASE_URL="postgresql://user:password@localhost:5432/restaurant_db?schema=public"
@@ -117,7 +116,6 @@ npm run test:e2e
 - `POST /auth/login` - Authenticate and receive tokens/cookies
 - `POST /auth/refresh` - Rotate refresh token & obtain access token
 - `POST /auth/logout` - Revoke current refresh token
-- `POST /auth/logout-all` - Revoke all active sessions for user
 
 ### 👤 Users (`/users/me`)
 
