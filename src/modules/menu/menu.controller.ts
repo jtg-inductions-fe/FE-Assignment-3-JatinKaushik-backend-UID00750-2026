@@ -93,7 +93,7 @@ export class MenuController {
     @Delete('menu-items/:id')
     async remove(
         @CurrentUser() user: CurrentUserPayload,
-        @Param('id') id: string,
+        @Param('id', ParseUUIDPipe) id: string,
     ): Promise<void> {
         return this.menuService.removeMenuItem(user.id, id);
     }
