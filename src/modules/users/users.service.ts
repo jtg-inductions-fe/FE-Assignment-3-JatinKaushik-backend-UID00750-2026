@@ -3,7 +3,6 @@ import {
     NotFoundException,
     UnauthorizedException,
 } from '@nestjs/common';
-import { AuthService } from '@modules/auth/auth.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CreateAddressDto } from '@dto/create-address.dto';
 import { UpdateAddressDto } from '@dto/update-address.dto';
@@ -16,7 +15,6 @@ export class UsersService {
     constructor(
         private readonly userRepository: UserRepository,
         private readonly addressRepository: AddressRepository,
-        private readonly authService: AuthService,
     ) {}
 
     /**

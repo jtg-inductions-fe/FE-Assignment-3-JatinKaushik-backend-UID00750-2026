@@ -138,6 +138,20 @@ export class RestaurantsService {
     }
 
     /**
+     * Retrieves a restaurant by ID or throws NotFoundException.
+     * @param id - Unique identifier of the restaurant.
+     * @returns Restaurant entity.
+     * @throws NotFoundException - If restaurant does not exist.
+     */
+    async findByIdOrThrow(id: string): Promise<Restaurant> {
+        const restaurant = await this.restaurantRepository.findFirst({ id });
+        if (!restaurant) {
+            throw new NotFoundException(`Restaurant with ID "${id}" not found`);
+        }
+        return restaurant;
+    }
+
+    /**
      * Helper check to verify ownership of a restaurant.
      *
      * @param ownerId - Unique identifier of the owner user.

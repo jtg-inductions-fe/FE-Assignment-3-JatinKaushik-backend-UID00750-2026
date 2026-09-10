@@ -21,6 +21,7 @@ import { RolesGuard } from '@guards/roles.guard';
 import { UsersModule } from '@modules/users/users.module';
 import { RestaurantsModule } from '@modules/restaurants/restaurants.module';
 import { MenuModule } from '@modules/menu/menu.module';
+import { OrdersModule } from '@modules/orders/orders.module';
 
 @Module({
     imports: [
@@ -38,6 +39,7 @@ import { MenuModule } from '@modules/menu/menu.module';
         UsersModule,
         RestaurantsModule,
         MenuModule,
+        OrdersModule,
     ],
     controllers: [AppController],
     providers: [
