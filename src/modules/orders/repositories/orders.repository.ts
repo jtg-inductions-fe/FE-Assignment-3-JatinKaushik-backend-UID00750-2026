@@ -112,22 +112,18 @@ export class OrderRepository extends BaseRepository<
         nextStatus: OrderStatus,
         changedBy: string,
     ): Promise<OrderWithDetails> {
-        await tx.order.update({
+        return await tx.order.update({
             where: { id: orderId },
-            data: { status: nextStatus },
-        });
-
-        await tx.orderStatusHistory.create({
             data: {
-                orderId,
                 status: nextStatus,
-                changedBy,
+                statusHistory: {
+                    create: {
+                        status: nextStatus,
+                        changedBy,
+                    },
+                },
             },
-        });
-
-        return tx.order.findFirst({
-            where: { id: orderId },
             include: ORDER_DETAIL_INCLUDE,
-        }) as Promise<OrderWithDetails>;
+        });
     }
 }

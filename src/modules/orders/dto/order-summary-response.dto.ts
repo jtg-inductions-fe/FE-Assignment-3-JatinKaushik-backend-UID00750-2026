@@ -1,4 +1,5 @@
 import { Expose, Type } from 'class-transformer';
+import { getTotalPrice } from '../utils/pricing.util';
 
 export class OrderSummaryResponseDto {
     @Expose() id!: string;
@@ -20,11 +21,7 @@ export class OrderSummaryResponseDto {
 
     @Expose({ name: 'total', toPlainOnly: true })
     get totalAmount(): number {
-        return (
-            Math.round(
-                (this.subtotal - this.discount + this.platformFee) * 100,
-            ) / 100
-        );
+        return getTotalPrice(this.subtotal, this.platformFee, this.discount);
     }
 
     @Expose() createdAt!: Date;

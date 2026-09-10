@@ -6,6 +6,7 @@ import {
     HttpCode,
     HttpStatus,
     Param,
+    ParseUUIDPipe,
     Patch,
     Post,
 } from '@nestjs/common';
@@ -106,7 +107,7 @@ export class UsersController {
     @Patch('addresses/:id')
     async updateAddress(
         @CurrentUser() user: CurrentUserPayload,
-        @Param('id') addressId: string,
+        @Param('id', ParseUUIDPipe) addressId: string,
         @Body() dto: UpdateAddressDto,
     ): Promise<Address> {
         return this.usersService.updateAddress(user.id, addressId, dto);
@@ -123,7 +124,7 @@ export class UsersController {
     @Delete('addresses/:id')
     async removeAddress(
         @CurrentUser() user: CurrentUserPayload,
-        @Param('id') addressId: string,
+        @Param('id', ParseUUIDPipe) addressId: string,
     ): Promise<void> {
         return this.usersService.removeAddress(user.id, addressId);
     }

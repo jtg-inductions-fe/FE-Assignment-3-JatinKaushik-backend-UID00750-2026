@@ -9,22 +9,23 @@ import type { CurrentUserPayload } from '@interfaces/current-user.interface';
 import { PlaceOrderDto } from './dto/place-order.dto';
 import { calculatePricing } from './utils/pricing.util';
 import { assertValidOwnerTransition } from './utils/order-status.util';
-import { OrderStatus, Prisma } from '@prisma-generated/client';
+import { Order, OrderStatus, Prisma } from '@prisma-generated/client';
 import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
 import { OrderRepository } from './repositories/orders.repository';
-import { RestaurantRepository } from '../restaurants/repositories/restaurants.repository';
 import { AddressRepository } from '@common/repositories/address.repository';
-import { MenuItemRepository } from '../menu/repositories/menu-item.repository';
 import { PaginatedResult } from '@common/interfaces/paginated-result.interface';
 import { OrderWithDetails } from './types/order.types';
+import { ExtendedPrismaClient } from '../../prisma/extensions/soft-delete.extension';
+import { RestaurantsService } from '@modules/restaurants/restaurants.service';
+import { MenuService } from '@modules/menu/menu.service';
 
 @Injectable()
 export class OrdersService {
     constructor(
         private readonly orderRepository: OrderRepository,
-        private readonly restaurantRepository: RestaurantRepository,
+        private readonly restaurantsService: RestaurantsService,
         private readonly addressRepository: AddressRepository,
-        private readonly menuItemRepository: MenuItemRepository,
+        private readonly menuService: MenuService,
     ) {}
 
     /**
@@ -40,12 +41,7 @@ export class OrdersService {
         dto: PlaceOrderDto,
     ): Promise<OrderWithDetails> {
         // Validate restaurant existence
-        const restaurant = await this.restaurantRepository.findFirst({
-            id: dto.restaurantId,
-        });
-        if (!restaurant) {
-            throw new NotFoundException('Restaurant not found');
-        }
+        await this.restaurantsService.findByIdOrThrow(dto.restaurantId);
 
         // Validate customer delivery address
         const address = await this.addressRepository.findFirst({
@@ -65,12 +61,10 @@ export class OrdersService {
         }
 
         // Validate menu items belong to the target restaurant
-        const menuItems = await this.menuItemRepository.findMany({
-            where: {
-                id: { in: menuItemIds },
-                restaurantId: dto.restaurantId,
-            },
-        });
+        const menuItems = await this.menuService.findMenuItemsByIds(
+            menuItemIds,
+            dto.restaurantId,
+        );
         if (menuItems.length !== menuItemIds.length) {
             throw new BadRequestException(
                 'One or more menu items do not belong to this restaurant, or no longer exist.',
@@ -81,7 +75,12 @@ export class OrdersService {
 
         // Build price and name snapshot line items
         const lineItems = dto.items.map((requested) => {
-            const menuItem = menuItemsById.get(requested.menuItemId)!;
+            const menuItem = menuItemsById.get(requested.menuItemId);
+            if (!menuItem) {
+                throw new BadRequestException(
+                    `Menu item with ID ${requested.menuItemId} not found.`,
+                );
+            }
             return {
                 menuItemId: menuItem.id,
                 nameSnapshot: menuItem.name,
@@ -94,7 +93,7 @@ export class OrdersService {
 
         // Execute atomic stock decrement and order creation transaction
         return this.orderRepository.executeTransaction(async (tx) => {
-            for (const line of lineItems) {
+            const decrementPromises = lineItems.map(async (line) => {
                 const affectedCount =
                     await this.orderRepository.decrementStockQty(
                         tx,
@@ -107,7 +106,8 @@ export class OrdersService {
                         `"${line.nameSnapshot}" no longer has enough stock for the requested quantity.`,
                     );
                 }
-            }
+            });
+            await Promise.all(decrementPromises);
 
             return this.orderRepository.createOrderWithDetails(tx, {
                 customer: { connect: { id: customerId } },
@@ -148,16 +148,13 @@ export class OrdersService {
     async listOrders(
         user: CurrentUserPayload,
         query: PaginationQueryDto,
-    ): Promise<PaginatedResult<OrderWithDetails>> {
+    ): Promise<PaginatedResult<Order>> {
         const where: Prisma.OrderWhereInput =
             user.role === Role.CUSTOMER
                 ? { customerId: user.id }
                 : { restaurant: { ownerId: user.id } };
 
-        return this.orderRepository.findPaginatedOrders(
-            where,
-            query,
-        ) as unknown as Promise<PaginatedResult<OrderWithDetails>>;
+        return this.orderRepository.findPaginatedOrders(where, query);
     }
 
     /**
@@ -218,9 +215,7 @@ export class OrdersService {
      * Asserts that an order belongs to a restaurant owned by the requesting user within a transaction.
      */
     private async assertOrderOwnedByRestaurantOwner(
-        tx: Parameters<
-            Parameters<typeof this.orderRepository.executeTransaction>[0]
-        >[0],
+        tx: ExtendedPrismaClient,
         orderId: string,
         ownerId: string,
     ) {

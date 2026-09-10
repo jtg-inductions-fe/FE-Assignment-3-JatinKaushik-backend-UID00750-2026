@@ -6,6 +6,7 @@ import {
     HttpCode,
     HttpStatus,
     Param,
+    ParseUUIDPipe,
     Patch,
     Post,
 } from '@nestjs/common';
@@ -75,7 +76,7 @@ export class MenuController {
     @Patch('menu-items/:id')
     async update(
         @CurrentUser() user: CurrentUserPayload,
-        @Param('id') id: string,
+        @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: UpdateMenuItemDto,
     ): Promise<MenuItem> {
         return this.menuService.updateMenuItem(user.id, id, dto);

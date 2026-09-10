@@ -1,6 +1,7 @@
 import {
     ArrayMinSize,
     IsArray,
+    IsNotEmpty,
     IsOptional,
     IsString,
     IsUUID,
@@ -11,9 +12,11 @@ import { PlaceOrderItemDto } from './place-order-item.dto';
 
 export class PlaceOrderDto {
     @IsUUID()
+    @IsNotEmpty()
     restaurantId!: string;
 
     @IsUUID()
+    @IsNotEmpty()
     deliveryAddressId!: string;
 
     @IsArray()

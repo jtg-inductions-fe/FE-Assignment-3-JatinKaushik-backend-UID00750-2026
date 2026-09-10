@@ -144,6 +144,24 @@ export class MenuService {
     }
 
     /**
+     * Retrieves valid active menu items belonging to a specific restaurant.
+     * @param itemIds - List of menu item identifiers to fetch.
+     * @param restaurantId - Target restaurant identifier.
+     * @returns List of menu items that match the provided IDs and belong to the restaurant.
+     */
+    async findMenuItemsByIds(
+        itemIds: string[],
+        restaurantId: string,
+    ): Promise<MenuItem[]> {
+        return this.menuItemRepository.findMany({
+            where: {
+                id: { in: itemIds },
+                restaurantId,
+            },
+        });
+    }
+
+    /**
      * Asserts that a category exists and belongs to a specific restaurant.
      */
     private async assertCategoryBelongsToRestaurant(

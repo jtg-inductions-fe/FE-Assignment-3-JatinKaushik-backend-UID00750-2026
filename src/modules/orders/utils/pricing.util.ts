@@ -1,5 +1,7 @@
-const PLATFORM_FEE_FLAT = 20;
-const PLATFORM_FEE_PERCENT = 0.01;
+import {
+    PLATFORM_FEE_FLAT,
+    PLATFORM_FEE_PERCENT,
+} from '@common/constants/price.constants';
 
 export interface PricingLineItem {
     priceSnapshot: number;
@@ -27,11 +29,19 @@ export function calculatePricing(
         Math.max(PLATFORM_FEE_FLAT, subtotal * PLATFORM_FEE_PERCENT),
     );
     const discount = round2(subtotal * (discountPercent / 100));
-    const total = round2(subtotal - discount + platformFee);
+    const total = getTotalPrice(subtotal, platformFee, discount);
 
     return { subtotal, platformFee, discount, total };
 }
 
-function round2(value: number): number {
+export function getTotalPrice(
+    subtotal: number,
+    platformFee: number,
+    discount = 0,
+): number {
+    return round2(subtotal - discount + platformFee);
+}
+
+export function round2(value: number): number {
     return Math.round(value * 100) / 100;
 }

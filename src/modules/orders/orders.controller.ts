@@ -5,6 +5,7 @@ import {
     HttpCode,
     HttpStatus,
     Param,
+    ParseUUIDPipe,
     Patch,
     Post,
     Query,
@@ -21,6 +22,8 @@ import type { CurrentUserPayload } from '@interfaces/current-user.interface';
 import { Serialize } from '@interceptors/serialize.interceptor';
 import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
 import { OrderWithDetails } from './types/order.types';
+import { PaginatedResult } from '@common/interfaces/paginated-result.interface';
+import { Order } from '@prisma-generated/client';
 
 @Controller('orders')
 export class OrdersController {
@@ -52,12 +55,11 @@ export class OrdersController {
      * @returns Paginated list of user or restaurant orders.
      */
     @Serialize(OrderSummaryResponseDto)
-    @HttpCode(HttpStatus.OK)
     @Get()
     async listOrders(
         @CurrentUser() user: CurrentUserPayload,
         @Query() query: PaginationQueryDto,
-    ) {
+    ): Promise<PaginatedResult<Order>> {
         return this.ordersService.listOrders(user, query);
     }
 
@@ -69,11 +71,10 @@ export class OrdersController {
      * @returns Complete order details.
      */
     @Serialize(OrderDetailResponseDto)
-    @HttpCode(HttpStatus.OK)
     @Get(':id')
     async getOrderDetail(
         @CurrentUser() user: CurrentUserPayload,
-        @Param('id') id: string,
+        @Param('id', ParseUUIDPipe) id: string,
     ): Promise<OrderWithDetails> {
         return this.ordersService.getOrderDetail(user, id);
     }
@@ -92,7 +93,7 @@ export class OrdersController {
     @Patch(':id/status')
     async updateStatus(
         @CurrentUser() user: CurrentUserPayload,
-        @Param('id') id: string,
+        @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: UpdateOrderStatusDto,
     ): Promise<OrderWithDetails> {
         return this.ordersService.updateStatus(user.id, id, dto.status);

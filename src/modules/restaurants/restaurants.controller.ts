@@ -6,6 +6,7 @@ import {
     HttpCode,
     HttpStatus,
     Param,
+    ParseUUIDPipe,
     Patch,
     Post,
     Query,
@@ -78,7 +79,7 @@ export class RestaurantsController {
     @Patch(':id')
     async update(
         @CurrentUser() user: CurrentUserPayload,
-        @Param('id') id: string,
+        @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: UpdateRestaurantDto,
     ): Promise<Restaurant> {
         return this.restaurantsService.update(user.id, id, dto);
@@ -97,7 +98,7 @@ export class RestaurantsController {
     @Delete(':id')
     async remove(
         @CurrentUser() user: CurrentUserPayload,
-        @Param('id') id: string,
+        @Param('id', ParseUUIDPipe) id: string,
     ): Promise<void> {
         return this.restaurantsService.remove(user.id, id);
     }
